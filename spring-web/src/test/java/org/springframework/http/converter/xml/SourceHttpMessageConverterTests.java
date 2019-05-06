@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -48,6 +48,7 @@ import org.springframework.http.MockHttpOutputMessage;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.FileCopyUtils;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 import static org.xmlunit.matchers.CompareMatcher.*;
 
@@ -72,7 +73,7 @@ public class SourceHttpMessageConverterTests {
 		converter = new SourceHttpMessageConverter<>();
 		Resource external = new ClassPathResource("external.txt", getClass());
 
-		bodyExternal = "<!DOCTYPE root SYSTEM \"http://192.168.28.42/1.jsp\" [" +
+		bodyExternal = "<!DOCTYPE root SYSTEM \"https://192.168.28.42/1.jsp\" [" +
 				"  <!ELEMENT root ANY >\n" +
 				"  <!ENTITY ext SYSTEM \"" + external.getURI() + "\" >]><root>&ext;</root>";
 	}

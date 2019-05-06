@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,6 +33,7 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.util.MimeType;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
@@ -48,7 +49,7 @@ public class MappingJackson2MessageConverterTests {
 	public void defaultConstructor() {
 		MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
 		assertThat(converter.getSupportedMimeTypes(),
-				contains(new MimeType("application", "json", StandardCharsets.UTF_8)));
+				contains(new MimeType("application", "json")));
 		assertFalse(converter.getObjectMapper().getDeserializationConfig()
 				.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
 	}
@@ -108,6 +109,14 @@ public class MappingJackson2MessageConverterTests {
 		assertEquals(Arrays.asList("Foo", "Bar"), actual.get("array"));
 		assertEquals(Boolean.TRUE, actual.get("bool"));
 		assertEquals("AQI=", actual.get("bytes"));
+	}
+
+	@Test // gh-22386
+	public void fromMessageMatchingInstance() {
+		MyBean myBean = new MyBean();
+		MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
+		Message<?> message = MessageBuilder.withPayload(myBean).build();
+		assertSame(myBean, converter.fromMessage(message, MyBean.class));
 	}
 
 	@Test(expected = MessageConversionException.class)
@@ -175,7 +184,7 @@ public class MappingJackson2MessageConverterTests {
 		assertTrue(actual.contains("\"array\":[\"Foo\",\"Bar\"]"));
 		assertTrue(actual.contains("\"bool\":true"));
 		assertTrue(actual.contains("\"bytes\":\"AQI=\""));
-		assertEquals("Invalid content-type", new MimeType("application", "json", StandardCharsets.UTF_8),
+		assertEquals("Invalid content-type", new MimeType("application", "json"),
 				message.getHeaders().get(MessageHeaders.CONTENT_TYPE, MimeType.class));
 	}
 

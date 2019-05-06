@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,7 +17,6 @@
 package org.springframework.http.converter.smile;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
@@ -90,7 +89,7 @@ public class MappingJackson2SmileHttpMessageConverterTests {
 		body.setBytes(new byte[]{0x1, 0x2});
 		converter.write(body, null, outputMessage);
 		assertArrayEquals(mapper.writeValueAsBytes(body), outputMessage.getBodyAsBytes());
-		assertEquals("Invalid content-type", new MediaType("application", "x-jackson-smile", StandardCharsets.UTF_8),
+		assertEquals("Invalid content-type", new MediaType("application", "x-jackson-smile"),
 				outputMessage.getHeaders().getContentType());
 	}
 

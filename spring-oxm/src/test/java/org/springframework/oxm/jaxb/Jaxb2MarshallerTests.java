@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -54,9 +54,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Collections;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.BDDMockito.eq;
@@ -203,7 +203,7 @@ public class Jaxb2MarshallerTests extends AbstractMarshallerTests<Jaxb2Marshalle
 				marshaller.supports(method.getGenericReturnType()));
 
 		marshaller.setSupportJaxbElementClass(true);
-		JAXBElement<FlightType> flightTypeJAXBElement = new JAXBElement<>(new QName("http://springframework.org", "flight"), FlightType.class,
+		JAXBElement<FlightType> flightTypeJAXBElement = new JAXBElement<>(new QName("https://springframework.org", "flight"), FlightType.class,
 				new FlightType());
 		assertTrue("Jaxb2Marshaller does not support JAXBElement<FlightsType>", marshaller.supports(flightTypeJAXBElement.getClass()));
 
@@ -327,7 +327,7 @@ public class Jaxb2MarshallerTests extends AbstractMarshallerTests<Jaxb2Marshalle
 		final javax.xml.bind.Unmarshaller unmarshaller = mock(javax.xml.bind.Unmarshaller.class);
 		Jaxb2Marshaller marshaller = new Jaxb2Marshaller() {
 			@Override
-			protected javax.xml.bind.Unmarshaller createUnmarshaller() {
+			public javax.xml.bind.Unmarshaller createUnmarshaller() {
 				return unmarshaller;
 			}
 		};
@@ -361,7 +361,7 @@ public class Jaxb2MarshallerTests extends AbstractMarshallerTests<Jaxb2Marshalle
 		final javax.xml.bind.Unmarshaller unmarshaller = mock(javax.xml.bind.Unmarshaller.class);
 		Jaxb2Marshaller marshaller = new Jaxb2Marshaller() {
 			@Override
-			protected javax.xml.bind.Unmarshaller createUnmarshaller() {
+			public javax.xml.bind.Unmarshaller createUnmarshaller() {
 				return unmarshaller;
 			}
 		};

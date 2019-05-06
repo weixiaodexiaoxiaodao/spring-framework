@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Arrays;
 
 import org.junit.Test;
 
@@ -36,6 +37,7 @@ import org.springframework.scheduling.annotation.AsyncAnnotationBeanPostProcesso
 import org.springframework.util.Assert;
 
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
 /**
@@ -81,7 +83,7 @@ public class ImportAwareTests {
 	}
 
 	@Test
-	public void importRegistrar() throws Exception {
+	public void importRegistrar() {
 		ImportedRegistrar.called = false;
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(ImportingRegistrarConfig.class);
@@ -91,7 +93,7 @@ public class ImportAwareTests {
 	}
 
 	@Test
-	public void importRegistrarWithImport() throws Exception {
+	public void importRegistrarWithImport() {
 		ImportedRegistrar.called = false;
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
 		ctx.register(ImportingRegistrarConfigWithImport.class);
@@ -118,6 +120,11 @@ public class ImportAwareTests {
 				.getBean(MetadataHolder.class).importMetadata;
 		assertEquals(ConfigurationOne.class,
 				((StandardAnnotationMetadata) importMetadata).getIntrospectedClass());
+	}
+
+	@Test
+	public void importAwareWithAnnotationAttributes() {
+		new AnnotationConfigApplicationContext(ApplicationConfiguration.class);
 	}
 
 
@@ -287,6 +294,43 @@ public class ImportAwareTests {
 		@Override
 		public ConfigurationPhase getConfigurationPhase() {
 			return ConfigurationPhase.REGISTER_BEAN;
+		}
+	}
+
+
+	@Configuration
+	@EnableFeature(policies = {
+			@EnableFeature.FeaturePolicy(name = "one"),
+			@EnableFeature.FeaturePolicy(name = "two")
+	})
+	public static class ApplicationConfiguration {
+	}
+
+
+	@Target(ElementType.TYPE)
+	@Retention(RetentionPolicy.RUNTIME)
+	@Import(FeatureConfiguration.class)
+	public @interface EnableFeature {
+
+		FeaturePolicy[] policies() default {};
+
+		@interface FeaturePolicy {
+
+			String name();
+		}
+	}
+
+
+	@Configuration
+	public static class FeatureConfiguration implements ImportAware {
+
+		@Override
+		public void setImportMetadata(AnnotationMetadata annotationMetadata) {
+			AnnotationAttributes enableFeatureAttributes =
+					AnnotationAttributes.fromMap(annotationMetadata.getAnnotationAttributes(EnableFeature.class.getName()));
+			assertEquals(EnableFeature.class, enableFeatureAttributes.annotationType());
+			Arrays.stream(enableFeatureAttributes.getAnnotationArray("policies")).forEach(featurePolicyAttributes ->
+					assertEquals(EnableFeature.FeaturePolicy.class, featurePolicyAttributes.annotationType()));
 		}
 	}
 

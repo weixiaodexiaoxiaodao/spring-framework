@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -102,7 +102,7 @@ public class MultipartHttpMessageWriterTests extends AbstractLeakCheckingTestCas
 		bodyBuilder.part("name 2", "value 2+2");
 		bodyBuilder.part("logo", logo);
 		bodyBuilder.part("utf8", utf8);
-		bodyBuilder.part("json", new Foo("bar"), MediaType.APPLICATION_JSON_UTF8);
+		bodyBuilder.part("json", new Foo("bar"), MediaType.APPLICATION_JSON);
 		bodyBuilder.asyncPart("publisher", publisher, String.class);
 		Mono<MultiValueMap<String, HttpEntity<?>>> result = Mono.just(bodyBuilder.build());
 
@@ -144,7 +144,7 @@ public class MultipartHttpMessageWriterTests extends AbstractLeakCheckingTestCas
 
 		part = requestParts.getFirst("json");
 		assertEquals("json", part.name());
-		assertEquals(MediaType.APPLICATION_JSON_UTF8, part.headers().getContentType());
+		assertEquals(MediaType.APPLICATION_JSON, part.headers().getContentType());
 
 		String value = StringDecoder.textPlainOnly(false).decodeToMono(part.content(),
 				ResolvableType.forClass(String.class), MediaType.TEXT_PLAIN,
@@ -197,8 +197,11 @@ public class MultipartHttpMessageWriterTests extends AbstractLeakCheckingTestCas
 
 		Mono<MultiValueMap<String, HttpEntity<?>>> result = Mono.just(bodyBuilder.build());
 
-		Map<String, Object> hints = Collections.emptyMap();
-		this.writer.write(result, null, MediaType.MULTIPART_FORM_DATA, this.response, hints).block();
+		this.writer.write(result, null, MediaType.MULTIPART_FORM_DATA, this.response, Collections.emptyMap())
+				.block(Duration.ofSeconds(5));
+
+		// Make sure body is consumed to avoid leak reports
+		this.response.getBodyAsString().block(Duration.ofSeconds(5));
 	}
 
 	@Test // SPR-16376

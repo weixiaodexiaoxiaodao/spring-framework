@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,9 +15,6 @@
  */
 
 package org.springframework.web.bind.support;
-
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
 import java.beans.PropertyEditorSupport;
 import java.util.Arrays;
@@ -38,6 +35,10 @@ import org.springframework.tests.sample.beans.TestBean;
 import org.springframework.web.bind.ServletRequestParameterPropertyValues;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.multipart.support.StringMultipartFileEditor;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  * @author Juergen Hoeller

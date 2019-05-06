@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,8 +29,6 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonView;
-import org.hamcrest.Matchers;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,6 +56,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeFalse;
 import static org.springframework.http.HttpMethod.POST;
 
 /**
@@ -161,8 +160,8 @@ public class RestTemplateIntegrationTests extends AbstractMockWebServerTestCase 
 	@Test
 	public void patchForObject() throws URISyntaxException {
 		// JDK client does not support the PATCH method
-		Assume.assumeThat(this.clientHttpRequestFactory,
-				Matchers.not(Matchers.instanceOf(SimpleClientHttpRequestFactory.class)));
+		assumeFalse(this.clientHttpRequestFactory instanceof SimpleClientHttpRequestFactory);
+
 		String s = template.patchForObject(baseUrl + "/{method}", helloWorld, String.class, "patch");
 		assertEquals("Invalid content", helloWorld, s);
 	}

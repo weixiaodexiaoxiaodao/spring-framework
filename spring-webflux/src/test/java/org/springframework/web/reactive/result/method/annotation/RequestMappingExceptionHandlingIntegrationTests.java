@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -93,13 +93,13 @@ public class RequestMappingExceptionHandlingIntegrationTests extends AbstractReq
 	public void exceptionFromMethodWithProducesCondition() throws Exception {
 		try {
 			HttpHeaders headers = new HttpHeaders();
-			headers.add("Accept", "text/csv, application/problem+json");
+			headers.add("Accept", "text/plain, application/problem+json");
 			performGet("/SPR-16318", headers, String.class).getBody();
 			fail();
 		}
 		catch (HttpStatusCodeException ex) {
 			assertEquals(500, ex.getRawStatusCode());
-			assertEquals("application/problem+json;charset=UTF-8", ex.getResponseHeaders().getContentType().toString());
+			assertEquals("application/problem+json", ex.getResponseHeaders().getContentType().toString());
 			assertEquals("{\"reason\":\"error\"}", ex.getResponseBodyAsString());
 		}
 	}
@@ -152,9 +152,9 @@ public class RequestMappingExceptionHandlingIntegrationTests extends AbstractReq
 					});
 		}
 
-		@GetMapping(path = "/SPR-16318", produces = "text/csv")
-		public String handleCsv() throws Exception {
-			throw new Spr16318Exception();
+		@GetMapping(path = "/SPR-16318", produces = "text/plain")
+		public Mono<String> handleTextPlain() throws Exception {
+			return Mono.error(new Spr16318Exception());
 		}
 
 		@ExceptionHandler

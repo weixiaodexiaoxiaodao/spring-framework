@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,25 +18,21 @@ package org.springframework.core.codec;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.Collections;
 
 import org.junit.Test;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.test.StepVerifier;
 
 import org.springframework.core.ResolvableType;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.lang.Nullable;
-import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StreamUtils;
 
 import static org.junit.Assert.*;
-import static org.springframework.core.ResolvableType.forClass;
+import static org.springframework.core.ResolvableType.*;
 
 /**
  * @author Arjen Poutsma
@@ -66,9 +62,7 @@ public class ResourceDecoderTests extends AbstractDecoderTestCase<ResourceDecode
 	@Override
 	@Test
 	public void decode() {
-		Flux<DataBuffer> input = Flux.concat(
-				dataBuffer(this.fooBytes),
-				dataBuffer(this.barBytes));
+		Flux<DataBuffer> input = Flux.concat(dataBuffer(this.fooBytes), dataBuffer(this.barBytes));
 
 		testDecodeAll(input, Resource.class, step -> step
 				.consumeNextWith(resource -> {
@@ -85,38 +79,28 @@ public class ResourceDecoderTests extends AbstractDecoderTestCase<ResourceDecode
 	}
 
 	@Override
-	protected void testDecodeError(Publisher<DataBuffer> input, ResolvableType outputType,
-			@Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
-
-		input = Flux.concat(
-				Flux.from(input).take(1),
-				Flux.error(new InputException()));
-
-		Flux<Resource> result = this.decoder.decode(input, outputType, mimeType, hints);
-
-		StepVerifier.create(result)
-				.expectError(InputException.class)
-				.verify();
-	}
-
-	@Override
-	public void decodeToMono() throws Exception {
+	public void decodeToMono() {
 		Flux<DataBuffer> input = Flux.concat(
 				dataBuffer(this.fooBytes),
 				dataBuffer(this.barBytes));
 
-		testDecodeToMonoAll(input, Resource.class, step -> step
-				.consumeNextWith(resource -> {
-					try {
-						byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
-						assertEquals("foobar", new String(bytes));
-					}
-					catch (IOException e) {
-						fail(e.getMessage());
-					}
-				})
-				.expectComplete()
-				.verify());
+		testDecodeToMonoAll(input, ResolvableType.forClass(Resource.class),
+				step -> step
+						.consumeNextWith(value -> {
+							Resource resource = (Resource) value;
+							try {
+								byte[] bytes = StreamUtils.copyToByteArray(resource.getInputStream());
+								assertEquals("foobar", new String(bytes));
+								assertEquals("testFile", resource.getFilename());
+							}
+							catch (IOException e) {
+								fail(e.getMessage());
+							}
+						})
+						.expectComplete()
+						.verify(),
+				null,
+				Collections.singletonMap(ResourceDecoder.FILENAME_HINT, "testFile"));
 	}
 
 }

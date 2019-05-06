@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -95,7 +95,7 @@ public class ControllerMethodResolverTests {
 		assertEquals(PathVariableMapMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(MatrixVariableMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(MatrixVariableMapMethodArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(RequestBodyArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(RequestBodyMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(RequestPartMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(ModelAttributeMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(RequestHeaderMethodArgumentResolver.class, next(resolvers, index).getClass());
@@ -105,13 +105,14 @@ public class ControllerMethodResolverTests {
 		assertEquals(SessionAttributeMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(RequestAttributeMethodArgumentResolver.class, next(resolvers, index).getClass());
 
-		assertEquals(HttpEntityArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(ModelArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ContinuationHandlerMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(HttpEntityMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ModelMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(ErrorsMethodArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(ServerWebExchangeArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(PrincipalArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ServerWebExchangeMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(PrincipalMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(SessionStatusMethodArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(WebSessionArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(WebSessionMethodArgumentResolver.class, next(resolvers, index).getClass());
 
 		assertEquals(CustomArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(CustomSyncArgumentResolver.class, next(resolvers, index).getClass());
@@ -143,11 +144,12 @@ public class ControllerMethodResolverTests {
 		assertEquals(SessionAttributeMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(RequestAttributeMethodArgumentResolver.class, next(resolvers, index).getClass());
 
-		assertEquals(ModelArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ContinuationHandlerMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ModelMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(ErrorsMethodArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(ServerWebExchangeArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(PrincipalArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(WebSessionArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ServerWebExchangeMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(PrincipalMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(WebSessionMethodArgumentResolver.class, next(resolvers, index).getClass());
 
 		assertEquals(CustomArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(CustomSyncArgumentResolver.class, next(resolvers, index).getClass());
@@ -178,8 +180,8 @@ public class ControllerMethodResolverTests {
 		assertEquals(ExpressionValueMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(RequestAttributeMethodArgumentResolver.class, next(resolvers, index).getClass());
 
-		assertEquals(ModelArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(ServerWebExchangeArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ModelMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ServerWebExchangeMethodArgumentResolver.class, next(resolvers, index).getClass());
 
 		assertEquals(CustomSyncArgumentResolver.class, next(resolvers, index).getClass());
 
@@ -209,10 +211,11 @@ public class ControllerMethodResolverTests {
 		assertEquals(SessionAttributeMethodArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(RequestAttributeMethodArgumentResolver.class, next(resolvers, index).getClass());
 
-		assertEquals(ModelArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(ServerWebExchangeArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(PrincipalArgumentResolver.class, next(resolvers, index).getClass());
-		assertEquals(WebSessionArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ContinuationHandlerMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ModelMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(ServerWebExchangeMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(PrincipalMethodArgumentResolver.class, next(resolvers, index).getClass());
+		assertEquals(WebSessionMethodArgumentResolver.class, next(resolvers, index).getClass());
 
 		assertEquals(CustomArgumentResolver.class, next(resolvers, index).getClass());
 		assertEquals(CustomSyncArgumentResolver.class, next(resolvers, index).getClass());

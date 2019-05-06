@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -90,6 +90,7 @@ import org.springframework.web.socket.sockjs.transport.TransportType;
 import org.springframework.web.socket.sockjs.transport.handler.DefaultSockJsService;
 import org.springframework.web.socket.sockjs.transport.handler.WebSocketTransportHandler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
@@ -184,8 +185,8 @@ public class MessageBrokerBeanDefinitionParserTests {
 		interceptors = defaultSockJsService.getHandshakeInterceptors();
 		assertThat(interceptors, contains(instanceOf(FooTestInterceptor.class),
 				instanceOf(BarTestInterceptor.class), instanceOf(OriginHandshakeInterceptor.class)));
-		assertTrue(defaultSockJsService.getAllowedOrigins().contains("http://mydomain3.com"));
-		assertTrue(defaultSockJsService.getAllowedOrigins().contains("http://mydomain4.com"));
+		assertTrue(defaultSockJsService.getAllowedOrigins().contains("https://mydomain3.com"));
+		assertTrue(defaultSockJsService.getAllowedOrigins().contains("https://mydomain4.com"));
 
 		SimpUserRegistry userRegistry = this.appContext.getBean(SimpUserRegistry.class);
 		assertNotNull(userRegistry);

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,11 +36,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.config.CorsRegistry;
 import org.springframework.web.reactive.config.WebFluxConfigurationSupport;
 
-import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -149,11 +147,11 @@ public class GlobalCorsConfigIntegrationTests extends AbstractRequestMappingInte
 
 	@Test
 	public void preFlightRequestWithCorsRestricted() throws Exception {
-		this.headers.set(HttpHeaders.ORIGIN, "http://foo");
+		this.headers.set(HttpHeaders.ORIGIN, "https://foo");
 		this.headers.add(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET");
 		ResponseEntity<String> entity = performOptions("/cors-restricted", this.headers, String.class);
 		assertEquals(HttpStatus.OK, entity.getStatusCode());
-		assertEquals("http://foo", entity.getHeaders().getAccessControlAllowOrigin());
+		assertEquals("https://foo", entity.getHeaders().getAccessControlAllowOrigin());
 		assertThat(entity.getHeaders().getAccessControlAllowMethods(), contains(HttpMethod.GET, HttpMethod.POST));
 	}
 
@@ -178,7 +176,7 @@ public class GlobalCorsConfigIntegrationTests extends AbstractRequestMappingInte
 		@Override
 		protected void addCorsMappings(CorsRegistry registry) {
 			registry.addMapping("/cors-restricted")
-					.allowedOrigins("http://foo")
+					.allowedOrigins("https://foo")
 					.allowedMethods("GET", "POST");
 			registry.addMapping("/cors");
 			registry.addMapping("/ambiguous")

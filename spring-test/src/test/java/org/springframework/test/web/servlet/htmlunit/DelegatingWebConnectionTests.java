@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,9 +41,9 @@ import org.springframework.tests.TestGroup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.sameInstance;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -139,7 +139,7 @@ public class DelegatingWebConnectionTests {
 		webClient.setWebConnection(
 				new DelegatingWebConnection(mockConnection, new DelegateWebConnection(cdnMatcher, httpConnection)));
 
-		Page page = webClient.getPage("http://code.jquery.com/jquery-1.11.0.min.js");
+		Page page = webClient.getPage("https://code.jquery.com/jquery-1.11.0.min.js");
 		assertThat(page.getWebResponse().getStatusCode(), equalTo(200));
 		assertThat(page.getWebResponse().getContentAsString(), not(isEmptyString()));
 	}

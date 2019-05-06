@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -211,15 +211,16 @@ final class ConfigurationClass {
 	}
 
 	public void validate(ProblemReporter problemReporter) {
-		// A configuration class may not be final (CGLIB limitation)
-		if (getMetadata().isAnnotated(Configuration.class.getName())) {
-			if (getMetadata().isFinal()) {
+		// A configuration class may not be final (CGLIB limitation) unless it declares proxyBeanMethods=false
+		String annotationName = Configuration.class.getName();
+		if (this.metadata.isAnnotated(annotationName) &&
+				(Boolean) this.metadata.getAnnotationAttributes(annotationName).get("proxyBeanMethods")) {
+			if (this.metadata.isFinal()) {
 				problemReporter.error(new FinalConfigurationProblem());
 			}
-		}
-
-		for (BeanMethod beanMethod : this.beanMethods) {
-			beanMethod.validate(problemReporter);
+			for (BeanMethod beanMethod : this.beanMethods) {
+				beanMethod.validate(problemReporter);
+			}
 		}
 	}
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import static java.util.stream.Collectors.*;
 import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 import static org.springframework.tests.Assume.*;
 import static org.springframework.tests.TestGroup.*;
@@ -58,22 +59,22 @@ public class AssumeTests {
 	@Test
 	public void assumeGroupWithNoActiveTestGroups() {
 		setTestGroups("");
-		Assume.group(JMXMP);
+		Assume.group(LONG_RUNNING);
 		fail("assumption should have failed");
 	}
 
 	@Test
 	public void assumeGroupWithNoMatchingActiveTestGroup() {
 		setTestGroups(PERFORMANCE, CI);
-		Assume.group(JMXMP);
+		Assume.group(LONG_RUNNING);
 		fail("assumption should have failed");
 	}
 
 	@Test
 	public void assumeGroupWithMatchingActiveTestGroup() {
-		setTestGroups(JMXMP);
+		setTestGroups(LONG_RUNNING);
 		try {
-			Assume.group(JMXMP);
+			Assume.group(LONG_RUNNING);
 		}
 		catch (AssumptionViolatedException ex) {
 			fail("assumption should NOT have failed");
@@ -99,7 +100,7 @@ public class AssumeTests {
 
 		setTestGroups(testGroups);
 		try {
-			Assume.group(JMXMP);
+			Assume.group(LONG_RUNNING);
 			fail("assumption should have failed");
 		}
 		catch (IllegalStateException ex) {
@@ -109,7 +110,7 @@ public class AssumeTests {
 			assertThat(ex.getCause(), instanceOf(IllegalArgumentException.class));
 			assertThat(ex.getCause().getMessage(),
 				equalTo("Unable to find test group 'bogus' when parsing testGroups value: '" + testGroups
-						+ "'. Available groups include: [LONG_RUNNING,PERFORMANCE,JMXMP,CI]"));
+						+ "'. Available groups include: [LONG_RUNNING,PERFORMANCE,CI]"));
 		}
 	}
 

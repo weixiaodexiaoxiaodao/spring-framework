@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,11 +34,11 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.util.pattern.PathPattern.PathRemainingMatchInfo;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -484,7 +484,7 @@ public class PathPatternTests {
 		// test exact matching
 		checkMatches("test", "test");
 		checkMatches("/test", "/test");
-		checkMatches("http://example.org", "http://example.org");
+		checkMatches("https://example.org", "https://example.org");
 		checkNoMatch("/test.jpg", "test.jpg");
 		checkNoMatch("test", "/test");
 		checkNoMatch("/test", "test");

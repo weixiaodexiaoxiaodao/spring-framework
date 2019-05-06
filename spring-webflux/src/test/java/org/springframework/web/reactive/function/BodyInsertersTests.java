@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -68,6 +68,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import static java.nio.charset.StandardCharsets.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.springframework.http.codec.json.Jackson2CodecSupport.*;
@@ -266,7 +267,7 @@ public class BodyInsertersTests {
 		BodyInserter<MultiValueMap<String, String>, ClientHttpRequest>
 				inserter = BodyInserters.fromFormData(body);
 
-		MockClientHttpRequest request = new MockClientHttpRequest(HttpMethod.GET, URI.create("http://example.com"));
+		MockClientHttpRequest request = new MockClientHttpRequest(HttpMethod.GET, URI.create("https://example.com"));
 		Mono<Void> result = inserter.insert(request, this.context);
 		StepVerifier.create(result).expectComplete().verify();
 
@@ -291,7 +292,7 @@ public class BodyInsertersTests {
 				.with("name 2", "value 2+2")
 				.with("name 3", null);
 
-		MockClientHttpRequest request = new MockClientHttpRequest(HttpMethod.GET, URI.create("http://example.com"));
+		MockClientHttpRequest request = new MockClientHttpRequest(HttpMethod.GET, URI.create("https://example.com"));
 		Mono<Void> result = inserter.insert(request, this.context);
 		StepVerifier.create(result).expectComplete().verify();
 
@@ -318,7 +319,7 @@ public class BodyInsertersTests {
 						.withPublisher("name 2", Flux.just("foo", "bar", "baz"), String.class)
 						.with(map);
 
-		MockClientHttpRequest request = new MockClientHttpRequest(HttpMethod.GET, URI.create("http://example.com"));
+		MockClientHttpRequest request = new MockClientHttpRequest(HttpMethod.GET, URI.create("https://example.com"));
 		Mono<Void> result = inserter.insert(request, this.context);
 		StepVerifier.create(result).expectComplete().verify();
 
@@ -330,7 +331,7 @@ public class BodyInsertersTests {
 		map.put("name", Arrays.asList("value1", "value2"));
 		BodyInserters.FormInserter<Object> inserter = BodyInserters.fromMultipartData(map);
 
-		MockClientHttpRequest request = new MockClientHttpRequest(HttpMethod.GET, URI.create("http://example.com"));
+		MockClientHttpRequest request = new MockClientHttpRequest(HttpMethod.GET, URI.create("https://example.com"));
 		Mono<Void> result = inserter.insert(request, this.context);
 		StepVerifier.create(result).expectComplete().verify();
 
