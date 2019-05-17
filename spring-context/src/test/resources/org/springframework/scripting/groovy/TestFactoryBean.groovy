@@ -12,6 +12,7 @@ class TestFactoryBean implements FactoryBean {
 		String.class
 	}
 
+	@Override
 	public Object getObject() {
 		"test"
 	}

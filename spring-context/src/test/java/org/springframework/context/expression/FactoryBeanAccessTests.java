@@ -91,6 +91,7 @@ public class FactoryBeanAccessTests {
 
 		static class CarFactoryBean implements FactoryBean<Car> {
 
+			@Override
 			public Car getObject() {
 				return new Car();
 			}

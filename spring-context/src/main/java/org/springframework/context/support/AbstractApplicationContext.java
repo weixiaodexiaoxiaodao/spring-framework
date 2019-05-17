@@ -513,11 +513,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
+		//使用互chi锁，防止启动，关闭及注册回调函数的重复调用，保证上下文的对象状态
 		synchronized (this.startupShutdownMonitor) {
 			// Prepare this context for refreshing.
+			// 提前准备启动参数，一些属性之类的
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
+			// 调用子类的创建工厂方法和刷新工厂方法
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
