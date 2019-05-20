@@ -524,34 +524,44 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
+			//初始化和设置BeanFactory的初始参数
 			prepareBeanFactory(beanFactory);
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
+				// 调用BeanFactory实例化后置处理器
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
+				// 在Bean工厂中注册bean的后置处理器，bean的代理的生成由它来实现
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.
+				// 初始化消息源，并且设置父消息源来自父容器的配置
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
+				// 初始化消息推送器，注册一个默认的单例bean  SimpleApplicationEventMulticaster
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
+				// 调用子类重写当前方法
+				// springboot核心基类EmbeddedWebApplicationContext就是用这个方法来初始化容器
 				onRefresh();
 
 				// Check for listener beans and register them.
+				// 注册listeners
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
+				// 把所有非延迟加载的bean初始化，并设置冻结标志位，防止重新实例化Bean，浪费资源
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
+				// 注册，启动lifecycleProcessor ，并且发送启动完成事件
 				finishRefresh();
 			}
 
@@ -565,6 +575,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				destroyBeans();
 
 				// Reset 'active' flag.
+				// 释放标志位，标识其可以重新启动
 				cancelRefresh(ex);
 
 				// Propagate exception to caller.
@@ -574,6 +585,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			finally {
 				// Reset common introspection caches in Spring's core, since we
 				// might not ever need metadata for singleton beans anymore...
+				// 清除与反射相关的缓存，例如反射的方法，字段，类型解析及类加载
 				resetCommonCaches();
 			}
 		}
