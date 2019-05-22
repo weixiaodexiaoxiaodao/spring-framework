@@ -51,6 +51,8 @@ import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
  * Such a context implementation can be specified as "contextClass" context-param
  * for ContextLoader or "contextClass" init-param for FrameworkServlet.
  *
+ *  负责从xml里面加载相关的配置
+ *
  * @author Rod Johnson
  * @author Juergen Hoeller
  * @see #setNamespace
@@ -79,7 +81,8 @@ public class XmlWebApplicationContext extends AbstractRefreshableWebApplicationC
 	 */
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
-		// Create a new XmlBeanDefinitionReader for the given BeanFactory.
+
+		// 创建一个读取xml文件的实例对象，并将读取到的bean的描述定义信息加载到BeanFactory中
 		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
 
 		// Configure the bean definition reader with this context's
@@ -89,7 +92,7 @@ public class XmlWebApplicationContext extends AbstractRefreshableWebApplicationC
 		beanDefinitionReader.setEntityResolver(new ResourceEntityResolver(this));
 
 		// Allow a subclass to provide custom initialization of the reader,
-		// then proceed with actually loading the bean definitions.
+		// 使用当前read读取指定的xml文件中的bean描述信息到工厂中
 		initBeanDefinitionReader(beanDefinitionReader);
 		loadBeanDefinitions(beanDefinitionReader);
 	}
