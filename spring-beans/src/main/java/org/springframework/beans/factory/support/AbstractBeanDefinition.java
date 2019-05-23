@@ -136,69 +136,146 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 */
 	public static final String INFER_METHOD = "(inferred)";
 
-
+	/**
+	 * Bean实例的class类
+ 	 */
 	@Nullable
 	private volatile Object beanClass;
 
+	/**
+	 * Bean的作用范围，默认为空，即默认为单例
+	 */
 	@Nullable
 	private String scope = SCOPE_DEFAULT;
 
+	/**
+	 * 设置抽象标志，用于对Bean描述信息的比较
+	 */
 	private boolean abstractFlag = false;
 
+	/**
+	 *  是否懒加载，大多数用于容器启动时
+	 */
 	private boolean lazyInit = false;
 
+	/**
+	 *  自动注入模式，默认为不自动注入
+	 */
 	private int autowireMode = AUTOWIRE_NO;
 
+	/**
+	 * 依赖检查，当处理属性注入时是否启动检查
+	 */
 	private int dependencyCheck = DEPENDENCY_CHECK_NONE;
 
+	/**
+	 * 当前Bean依赖的Beans的名称,当获取bean时，注册并实例化这些Bean
+	 */
 	@Nullable
 	private String[] dependsOn;
 
+	/**
+	 * 自动注入候选Bean,也就是说，如果相同类型的Bean有多个，则优先使用当前值为true的Bean
+	 */
 	private boolean autowireCandidate = true;
 
+	/**
+	 *  当类型相同时，优先选取有此配置的Bean
+	 */
 	private boolean primary = false;
 
+	/**
+	 * Bean属性的Qualifier注解执行函数的map
+	 */
 	private final Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>();
 
 	@Nullable
 	private Supplier<?> instanceSupplier;
-
+	/**
+	 * 如果Beanclass的范围修饰符不是public ，并且设置这个值为false，则在创建实例时检查性报错
+	 */
 	private boolean nonPublicAccessAllowed = true;
 
+	/**
+	 * 由于构造函数的参数可能有多个，所以在设置这个参数时，可以在构造函数解析时使用
+	 * 宽松模式(尽管有同样参数数量的构造函数也可以实例化bean)
+	 */
 	private boolean lenientConstructorResolution = true;
 
+	/**
+	 * 工厂Bean的名称
+	 */
 	@Nullable
 	private String factoryBeanName;
 
+	/**
+	 * 工厂方法的名称
+	 */
 	@Nullable
 	private String factoryMethodName;
 
+	/**
+	 * 构造函数的参数值集合
+	 */
 	@Nullable
 	private ConstructorArgumentValues constructorArgumentValues;
 
+	/**
+	 * 属性值对集合
+	 */
 	@Nullable
 	private MutablePropertyValues propertyValues;
 
+	/**
+	 * 重写方法的设置集合
+	 */
 	@Nullable
 	private MethodOverrides methodOverrides;
 
+	/**
+	 * 初始化方法名，在初始化Bean时调用该方法
+	 */
 	@Nullable
 	private String initMethodName;
 
+	/**
+	 * 销毁Bean的方法名
+	 */
 	@Nullable
 	private String destroyMethodName;
-
+	/**
+	 * 强制初始化
+	 */
 	private boolean enforceInitMethod = true;
 
+	/**
+	 * 强制销毁
+	 */
 	private boolean enforceDestroyMethod = true;
 
+	/**
+	 * 判断bean是否是合成的bean,如果Bean不是合成的bean,
+	 * 则会调用 下面类的postProcessBeforeInstantiation方法
+	 * @see org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor
+	 */
 	private boolean synthetic = false;
 
+	/**
+	 * Bean的角色分为三种：ROLE_APPLICATION==0全局角色，面向spring用户，用户自定义的bean一般都是全局角色
+	 * ROLE_SUPPORT==1 ,特殊场景使用
+	 * ROLE_INFRASTRUCTURE ==2 在spring 内部使用
+	 */
 	private int role = BeanDefinition.ROLE_APPLICATION;
 
+	/**
+	 * Bean的描述
+	 */
 	@Nullable
 	private String description;
 
+	/**
+	 * Bean的来源
+	 */
 	@Nullable
 	private Resource resource;
 
