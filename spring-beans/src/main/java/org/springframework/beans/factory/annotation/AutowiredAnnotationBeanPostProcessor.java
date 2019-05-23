@@ -271,11 +271,14 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		Constructor<?>[] candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 		if (candidateConstructors == null) {
 			// Fully synchronized resolution now...
+			// 在保证缓存和处理的一致性时使用了锁，虽然缓存使用了线程安全的hashMap，
+			// 但是为了保证处理逻辑和设置缓存的一置，使用了内置锁
 			synchronized (this.candidateConstructorsCache) {
 				candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 				if (candidateConstructors == null) {
 					Constructor<?>[] rawCandidates;
 					try {
+						// 获取当前构造方法的注解属性@Autowire,@Value等
 						rawCandidates = beanClass.getDeclaredConstructors();
 					}
 					catch (Throwable ex) {
@@ -296,6 +299,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 							continue;
 						}
 						AnnotationAttributes ann = findAutowiredAnnotation(candidate);
+						// 如果这个构造方法不存在注解属性，则使用这个构造方法的参数类型去父类中寻找
 						if (ann == null) {
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
 							if (userClass != beanClass) {
@@ -329,11 +333,14 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 							candidates.add(candidate);
 						}
 						else if (candidate.getParameterCount() == 0) {
+							// 如果没有注解，则直接选择一个默认的构告方法，因为调用方的目的是实例化class
 							defaultConstructor = candidate;
 						}
 					}
 					if (!candidates.isEmpty()) {
 						// Add default constructor to list of optional constructors, as fallback.
+						// 如果找到了合适的构造方法，但是这个构造方法不是require=true强依赖
+						// 就采用默认的构造方法
 						if (requiredConstructor == null) {
 							if (defaultConstructor != null) {
 								candidates.add(defaultConstructor);
@@ -360,6 +367,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 					else {
 						candidateConstructors = new Constructor<?>[0];
 					}
+					// 设置缓存
 					this.candidateConstructorsCache.put(beanClass, candidateConstructors);
 				}
 			}
@@ -369,8 +377,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		// 获取自动注入的元数据
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
+			// 获取当前属性的元数据实体，并注入目标属性中
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (BeanCreationException ex) {
@@ -414,16 +424,22 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	private InjectionMetadata findAutowiringMetadata(String beanName, Class<?> clazz, @Nullable PropertyValues pvs) {
 		// Fall back to class name as cache key, for backwards compatibility with custom callers.
+		// 优先使用Bean名称进行缓存，如果bean名称为空，则使用类名进行缓存
 		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
 		// Quick check on the concurrent map first, with minimal locking.
+		// 先去缓存中查找
 		InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
+		// 如果缓存中没有并且class不为空
 		if (InjectionMetadata.needsRefresh(metadata, clazz)) {
 			synchronized (this.injectionMetadataCache) {
+				// 使用了duble check的方式来保证性能和线程安全
 				metadata = this.injectionMetadataCache.get(cacheKey);
 				if (InjectionMetadata.needsRefresh(metadata, clazz)) {
+					// 保护性操作，先清除原来的属性
 					if (metadata != null) {
 						metadata.clear(pvs);
 					}
+					// 构建自动注入元数据，获取属性和方法中含有value和autowired注解的元素来构建数据元实体
 					metadata = buildAutowiringMetadata(clazz);
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
