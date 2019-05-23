@@ -329,6 +329,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				// Create bean instance.
 				if (mbd.isSingleton()) {
+					// 如果是单例类型的bean,则直接调用createBean方法进行创建
+					// 同时使用FactoryBeanRegistrySupport的getSingleton来实现缓存，避免重复创建。
+					// 由此可见spring 对职责的划分，以及AbstractBeanFactory对FactoryBeanRegistrySupport继承的考虑
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							// 调用当前类的 abstract 方法，具体的交给了 AbstractAutowireCapableBeanFactory
@@ -338,6 +341,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							// Explicitly remove instance from singleton cache: It might have been put there
 							// eagerly by the creation process, to allow for circular reference resolution.
 							// Also remove any beans that received a temporary reference to the bean.
+							// 如果在创建Bean时发生异常，则由于当前Bean实例可能已经被添加到单例池中
+							// 需要调用销毁方法销毁当前Bean实例
 							destroySingleton(beanName);
 							throw ex;
 						}
@@ -347,6 +352,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				else if (mbd.isPrototype()) {
 					// It's a prototype -> create a new instance.
+					// 如果当前bean的定义是多例的，则进行实时创建
+					// 多例的场景是一次获取新的Bean实例，所以无法和单例Bean一样使用单例池进行缓存
 					Object prototypeInstance = null;
 					try {
 						beforePrototypeCreation(beanName);
