@@ -484,6 +484,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Make sure bean class is actually resolved at this point, and
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
+		// 从Bean的描述信息中解析出Bean的class，为创建实例做准备，并且复制一个新的
+		// RootBeanDefinition对象来使用，防止多线程场景篡改原来的对象
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			mbdToUse = new RootBeanDefinition(mbd);
@@ -491,6 +493,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// Prepare method overrides.
+		// 准备方法重写
 		try {
 			mbdToUse.prepareMethodOverrides();
 		}
@@ -501,7 +504,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+			// 获取并且调用Bean的后置处理器的子接口。 因为当前的createBean方法也是一个模板方法
+			// 并且为了扩展性和灵活性增加了几个Bean实例化的处理器接口
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
+			// 如果为某些Bean添加了Bean实例化前的后置处理器，并且这些后置处理器已经实例化当前Bean
+			// 则不用继续创建Bean实例，也就是说Bean的创建不全是反射创建的。这也再次支持了代理bean的创建
+			// 包括CGLIB代理的创建，正是这些Bean的实例化的后置处理器设计，让spring可以非常灵活地扩展
 			if (bean != null) {
 				return bean;
 			}
@@ -512,6 +520,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
+			// 正式创建Bean
 			Object beanInstance = doCreateBean(beanName, mbdToUse, args);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Finished creating instance of bean '" + beanName + "'");
