@@ -558,9 +558,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Instantiate the bean.
 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
+			// 如果这个Bean是单例的，并且在单例map(用来存储单例Bean的映射集合)中已经存在名为beanName的Bean实例
+			// 则不需要再次实例化当前Bean,同时，如果在单例map中不存在当前bean实例，则在实例化当前bean实例后将其添加到单例map中
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
+			// 创建bean实例
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		final Object bean = instanceWrapper.getWrappedInstance();
@@ -570,6 +573,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// Allow post-processors to modify the merged bean definition.
+		// 调用这个Bean的Merge bean 来定义后置处理器方法，例如检查自动注入时的成员
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
@@ -585,6 +589,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
+		// 尽量提前创建该单例的Bean实例，并解决循环依赖的问题
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
 		if (earlySingletonExposure) {
@@ -595,10 +600,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
-		// Initialize the bean instance.
+		// Initialize the bean instance. populate填充的意思
+		// 初始化当前Bean 此时这个bean实例已被创建，但是其中的属性没被赋值，所以要准备当前bean与属性相关的数据
 		Object exposedObject = bean;
 		try {
+			// 处理Bean的相关属性和注入等
 			populateBean(beanName, mbd, instanceWrapper);
+			// 初始化当前Bean
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -611,6 +619,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 		}
 
+		// 为Bean的循环依赖的处理及提早注册的实现部分
 		if (earlySingletonExposure) {
 			Object earlySingletonReference = getSingleton(beanName, false);
 			if (earlySingletonReference != null) {
@@ -640,6 +649,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Register bean as disposable.
 		try {
+			// 如果当前Bean的生命周期不是多例(包括单例，request,session等范围的Bean)的
+			// 也就是说需要spring来管理Bean的生命周期，则此时会把Bean的destory方法注册到Spring上下文中。
+			// 当spring上下文启动异常时，调用销毁方法，处理已经生成的Bean,来释放Bean占用的资源
 			registerDisposableBeanIfNecessary(beanName, bean, mbd);
 		}
 		catch (BeanDefinitionValidationException ex) {
