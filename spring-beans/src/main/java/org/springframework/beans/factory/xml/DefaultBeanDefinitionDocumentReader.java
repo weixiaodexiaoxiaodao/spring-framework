@@ -194,6 +194,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			processAliasRegistration(ele);
 		}
 		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
+			// 这里面是读取的 Bean 节点的信息
 			processBeanDefinition(ele, delegate);
 		}
 		else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {

@@ -39,6 +39,9 @@ import org.springframework.util.StringUtils;
 public abstract class AbstractRefreshableConfigApplicationContext extends AbstractRefreshableApplicationContext
 		implements BeanNameAware, InitializingBean {
 
+	/**
+	 * 存放配置文件的，如: "application.xml"
+	 */
 	@Nullable
 	private String[] configLocations;
 
@@ -80,8 +83,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 			for (int i = 0; i < locations.length; i++) {
 				this.configLocations[i] = resolvePath(locations[i]).trim();
 			}
-		}
-		else {
+		} else {
 			this.configLocations = null;
 		}
 	}

@@ -3,7 +3,8 @@ description = "Spring study"
 apply plugin: "groovy"
 
 dependencies {
-	compile(project(":spring-core"))
+	compile(project(":spring-context"))
+	compile(project(":spring-instrument"))
 }
 
 // This module does joint compilation for Java and Groovy code with the compileGroovy task.
