@@ -58,6 +58,7 @@ public abstract class AopConfigUtils {
 
 	static {
 		// Set up the escalation list...
+		// 从list的添加顺序可以看出Bean的索引值顺序
 		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);
 		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);
 		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);
@@ -123,6 +124,7 @@ public abstract class AopConfigUtils {
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
+				// 如果当前Bean的class与容器中已存在的bean描述信息的class不一致，则按照类的优先级来选择合适的目标类
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
 				int requiredPriority = findPriorityForClass(cls);
 				if (currentPriority < requiredPriority) {
@@ -132,6 +134,7 @@ public abstract class AopConfigUtils {
 			return null;
 		}
 
+		// 如果在当前BeanFactory中没有这个Bean的描述信息，则为当前对象创建Bean描述信息并将其注册到BeanFactory中
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(cls);
 		beanDefinition.setSource(source);
 		beanDefinition.getPropertyValues().add("order", Ordered.HIGHEST_PRECEDENCE);

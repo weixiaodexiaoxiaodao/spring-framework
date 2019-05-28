@@ -243,8 +243,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Override
 	public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) {
 		Object cacheKey = getCacheKey(beanClass, beanName);
-
+		// 如果Bean名称为空，或者在目标源Bean中不包含这个名称，则此时Spring开始怀疑是否需要创建代理
 		if (!StringUtils.hasLength(beanName) || !this.targetSourcedBeans.contains(beanName)) {
+			// 如果这个Bean是Advisor等，则不处理
 			if (this.advisedBeans.containsKey(cacheKey)) {
 				return null;
 			}
@@ -257,6 +258,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Create proxy here if we have a custom TargetSource.
 		// Suppresses unnecessary default instantiation of the target bean:
 		// The TargetSource will handle target instances in a custom fashion.
+		// 如果这个Bean是Advice,pointcut,advisor,aopInfrastructureBean或者设置了可跳过标志，则不做处理
+		// 并且标志不处理标志，和上面的处理逻辑呼应，也就是符合这些条件的Bean是不能被代理的
 		TargetSource targetSource = getCustomTargetSource(beanClass, beanName);
 		if (targetSource != null) {
 			if (StringUtils.hasLength(beanName)) {
