@@ -307,6 +307,8 @@ public abstract class AopUtils {
 		}
 		List<Advisor> eligibleAdvisors = new ArrayList<>();
 		for (Advisor candidate : candidateAdvisors) {
+			// 如果当前Advisor是IntroductionAdvisor类型并且目标Bean是Advisor
+			// 则将当前Advisor添加到符合目标Bean的Advisor集合中，如果当前Advisor是IntroducationAdvisor类型
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
