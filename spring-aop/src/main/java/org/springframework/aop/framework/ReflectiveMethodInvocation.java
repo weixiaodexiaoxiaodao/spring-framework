@@ -159,19 +159,24 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	@Nullable
 	public Object proceed() throws Throwable {
 		//	We start with an index of -1 and increment early.
+		//	如果当前已经执行到最后一个拦截器
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
+			// 反射调用方法，也就是说调用被代理类的那个方法
 			return invokeJoinpoint();
 		}
-
+		// 按照索引的顺序获取拦截器，因为拦截器已经在获取Advisor时排序好了，所以直接按顺序获取执行就可以
 		Object interceptorOrInterceptionAdvice =
 				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
 		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
 			// Evaluate dynamic method matcher here: static part will already have
 			// been evaluated and found to match.
+			// 如果是动态匹配接口的拦截器，则判断当前方法需要执行的方法是否配置了拦截器
 			InterceptorAndDynamicMethodMatcher dm =
 					(InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
 			Class<?> targetClass = (this.targetClass != null ? this.targetClass : this.method.getDeclaringClass());
 			if (dm.methodMatcher.matches(this.method, targetClass, this.arguments)) {
+				// 在调用时必须把当前对象的引用以参数形式传递给目标拦截器，否则无法回到这个对象的这个方法中
+				// 无法记录调用链当前执行的位置
 				return dm.interceptor.invoke(this);
 			}
 			else {
@@ -183,6 +188,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		else {
 			// It's an interceptor, so we just invoke it: The pointcut will have
 			// been evaluated statically before this object was constructed.
+			// 如果是一个普通的拦截器，则直接调用拦截器
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}
 	}
