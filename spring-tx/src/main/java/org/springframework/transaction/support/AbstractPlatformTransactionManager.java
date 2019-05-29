@@ -346,24 +346,30 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 		if (definition == null) {
 			// Use defaults if no transaction definition given.
+			// 如果没有获取事务描述信息Bean，就会创建一个新对象
 			definition = new DefaultTransactionDefinition();
 		}
-
+		// 如果存放在ThreadLocal中的有ConnectionHolder
+		// 并且在这个ConnectionHolder中设置了事务标志，就说明已经有事务了
 		if (isExistingTransaction(transaction)) {
 			// Existing transaction found -> check propagation behavior to find out how to behave.
 			return handleExistingTransaction(definition, transaction, debugEnabled);
 		}
 
 		// Check definition settings for new transaction.
+		// 如果当前事务是新创建的，则验证事务的超时配置，如果配置的超时时间<-1，则抛出异常
 		if (definition.getTimeout() < TransactionDefinition.TIMEOUT_DEFAULT) {
 			throw new InvalidTimeoutException("Invalid transaction timeout", definition.getTimeout());
 		}
 
 		// No existing transaction found -> check propagation behavior to find out how to proceed.
+		// mandatory 强制性
+		// 如果配置的事务传播级别是PROPAGATION_MANDATORY，并且没有获取到事务，则抛出异常
 		if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_MANDATORY) {
 			throw new IllegalTransactionStateException(
 					"No existing transaction found for transaction marked with propagation 'mandatory'");
 		}
+		// 如果配置的传播级别为：需要当前已存在事务，需要创建一个新事务，nested 需要嵌套一个事务，则不用挂起当前事务
 		else if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
 				definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {
@@ -372,10 +378,14 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				logger.debug("Creating new transaction with name [" + definition.getName() + "]: " + definition);
 			}
 			try {
+				// 如果事务同步级别被设置为从不同步，则默认为一直同步
 				boolean newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
+				// 因为当前没有事务，所以以上事务传播级别都需要事务，设置新事务的标志值为true
 				DefaultTransactionStatus status = newTransactionStatus(
 						definition, transaction, true, newSynchronization, debugEnabled, suspendedResources);
+				// 开始创建新事务
 				doBegin(transaction, definition);
+				// 设置事务同步属性
 				prepareSynchronization(status, definition);
 				return status;
 			}
