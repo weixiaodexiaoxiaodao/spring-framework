@@ -711,12 +711,14 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 */
 	@Override
 	public final void commit(TransactionStatus status) throws TransactionException {
+		// 如果当前事务的状态为已经完成，则抛出异常
 		if (status.isCompleted()) {
 			throw new IllegalTransactionStateException(
 					"Transaction is already completed - do not call commit or rollback more than once per transaction");
 		}
 
 		DefaultTransactionStatus defStatus = (DefaultTransactionStatus) status;
+		// 如果事务设置了本地回滚
 		if (defStatus.isLocalRollbackOnly()) {
 			if (defStatus.isDebug()) {
 				logger.debug("Transactional code has requested rollback");
@@ -724,7 +726,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			processRollback(defStatus, false);
 			return;
 		}
-
+		// 则判断全局回滚JtaTransactionManager是否为true,其他事务管理器都为false
 		if (!shouldCommitOnGlobalRollbackOnly() && defStatus.isGlobalRollbackOnly()) {
 			if (defStatus.isDebug()) {
 				logger.debug("Global transaction is marked as rollback-only but transactional code requested commit");
@@ -748,11 +750,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 			try {
 				boolean unexpectedRollback = false;
+				// 扩展方法，支持子类重写
 				prepareForCommit(status);
 				triggerBeforeCommit(status);
 				triggerBeforeCompletion(status);
 				beforeCompletionInvoked = true;
-
+				// 如果当前事务已经设置了保存点，则释放
 				if (status.hasSavepoint()) {
 					if (status.isDebug()) {
 						logger.debug("Releasing transaction savepoint");
@@ -760,6 +763,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 					unexpectedRollback = status.isGlobalRollbackOnly();
 					status.releaseHeldSavepoint();
 				}
+				// 如果是新事务，则直接调用connection.commit提交新事务
 				else if (status.isNewTransaction()) {
 					if (status.isDebug()) {
 						logger.debug("Initiating transaction commit");
@@ -785,10 +789,13 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			}
 			catch (TransactionException ex) {
 				// can only be caused by doCommit
+				// 如果设置失败回滚参数为true，则回滚。rollbackOnCommitFailure默认为false
 				if (isRollbackOnCommitFailure()) {
+					// 如果是新事务，则直接回滚，否则设置回滚标志
 					doRollbackOnCommitException(status, ex);
 				}
 				else {
+					// 释放资源
 					triggerAfterCompletion(status, TransactionSynchronization.STATUS_UNKNOWN);
 				}
 				throw ex;
@@ -845,23 +852,27 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			boolean unexpectedRollback = unexpected;
 
 			try {
+				// 设置事务完成前的操作
 				triggerBeforeCompletion(status);
-
+				// 如果当前事务已经设置了保存点
 				if (status.hasSavepoint()) {
 					if (status.isDebug()) {
 						logger.debug("Rolling back transaction to savepoint");
 					}
+					// 则回滚到保存点，并且释放保存点，在当前事务状态中清空事务保存点
 					status.rollbackToHeldSavepoint();
 				}
 				else if (status.isNewTransaction()) {
 					if (status.isDebug()) {
 						logger.debug("Initiating transaction rollback");
 					}
+					// 如果是新创建的事务，则获取当前数据库连接，直接回滚当前事务
 					doRollback(status);
 				}
 				else {
 					// Participating in larger transaction
 					if (status.hasTransaction()) {
+						// 如果事务配置的是本地回滚或者标记为全局回滚(默认为true)
 						if (status.isLocalRollbackOnly() || isGlobalRollbackOnParticipationFailure()) {
 							if (status.isDebug()) {
 								logger.debug("Participating transaction failed - marking existing transaction as rollback-only");
@@ -883,6 +894,8 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 					}
 				}
 			}
+			// 无论是否发生异常，都调用触发完成后的逻辑来获取注册时的transactionSynchronization列表
+			// 然后把事务当前状态的事件推送给它们
 			catch (RuntimeException | Error ex) {
 				triggerAfterCompletion(status, TransactionSynchronization.STATUS_UNKNOWN);
 				throw ex;
@@ -1021,8 +1034,11 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 * @see #doCleanupAfterCompletion
 	 */
 	private void cleanupAfterCompletion(DefaultTransactionStatus status) {
+		// 设置事务的当前状态为已完成
 		status.setCompleted();
 		if (status.isNewSynchronization()) {
+			// 如果是新事务，则设置连接con.setAutoCommit(false),考虑到连接池，连接复用的场景
+			// 所以要恢复连接的原有属性，并且释放当前连接
 			TransactionSynchronizationManager.clear();
 		}
 		if (status.isNewTransaction()) {
