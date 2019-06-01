@@ -1388,6 +1388,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
+		// 如果实例为空，并且属性值不为空，则不能注入，如果属性值为空，则跳出当前方法
+		// 如果bean不是合成的bean，并且在当前工厂中已经注册了bean实例化的后置处理器
+		// 则顺序调用Bean后置处理器，如果其中任意一个处理器发生问题，则循环不能继续
 		boolean continueWithPropertyPopulation = true;
 
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
@@ -1407,15 +1410,17 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		PropertyValues pvs = (mbd.hasPropertyValues() ? mbd.getPropertyValues() : null);
-
+		//只处理当前bean按类型注入和按名称注入
 		if (mbd.getResolvedAutowireMode() == AUTOWIRE_BY_NAME || mbd.getResolvedAutowireMode() == AUTOWIRE_BY_TYPE) {
 			MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
 			// Add property values based on autowire by name if applicable.
 			if (mbd.getResolvedAutowireMode() == AUTOWIRE_BY_NAME) {
+				// 如果是按名称注入，则直接通过getBean获取这些bean，然后注入，添加属性信息，并注册当前依赖的bean到BeanFactory中
 				autowireByName(beanName, mbd, bw, newPvs);
 			}
 			// Add property values based on autowire by type if applicable.
 			if (mbd.getResolvedAutowireMode() == AUTOWIRE_BY_TYPE) {
+				// 按类型获取并解决依赖，调用这个resolveDependency方法来处理，在获取对象的值后调用类型转换处理返回值，并且添加到属性信息中
 				autowireByType(beanName, mbd, bw, newPvs);
 			}
 			pvs = newPvs;
