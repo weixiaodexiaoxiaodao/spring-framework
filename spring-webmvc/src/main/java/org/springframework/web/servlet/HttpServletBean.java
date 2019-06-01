@@ -141,6 +141,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	/**
 	 * Map config parameters onto bean properties of this servlet, and
 	 * invoke subclass initialization.
+	 * 重写GenericServlet的init()方法占位符来初始化Servlet Bean，这些初始化信息来自Servlet配置的参数
+	 * 我们通常通过Servlet初始化参数为一个Servlet指定非默认名称的spring context的文件路径，就是这里实现的
 	 * @throws ServletException if bean properties are invalid (or required
 	 * properties are missing), or if subclass initialization fails.
 	 */
@@ -148,13 +150,22 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	public final void init() throws ServletException {
 
 		// Set bean properties from init parameters.
+		// 设置servlet初始化参数作为servletBean的属性
+		// 使用servlet配置的初始化参数创建一个propertyValues,PropertyValues是名值对的集合
+		// 子类也可以指定哪些属性是必需的
 		PropertyValues pvs = new ServletConfigPropertyValues(getServletConfig(), this.requiredProperties);
 		if (!pvs.isEmpty()) {
 			try {
+				// 把当前的servlet当作一个Bean,把Bean的属性及属性的存取方法信息放入BeanWrapper
+				// BeanWrapper中的 rootObject
 				BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
+				// 注册一个可以在资源和路径之间进行转化的用户化编辑器，这些资源是这个web应用内的资源
+				// 例如一个文件，一个图片，等等
 				ResourceLoader resourceLoader = new ServletContextResourceLoader(getServletContext());
 				bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, getEnvironment()));
+				// 可以让子类增加更多的用户化的编辑器，或者对BeanWrapper进行更多的初始化
 				initBeanWrapper(bw);
+				// 把初始化指定的参数值赋到servlet的属性中，第2个参数true表明忽略位置属性
 				bw.setPropertyValues(pvs, true);
 			}
 			catch (BeansException ex) {
@@ -166,6 +177,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 		}
 
 		// Let subclasses do whatever initialization they like.
+		// 给子类一个机会去初始化其需要的资源，同样是一个模板方法
 		initServletBean();
 	}
 

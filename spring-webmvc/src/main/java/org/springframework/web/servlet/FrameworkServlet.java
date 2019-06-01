@@ -516,6 +516,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	/**
 	 * Overridden method of {@link HttpServletBean}, invoked after any bean properties
 	 * have been set. Creates this servlet's WebApplicationContext.
+	 * //初始化servlet框架所需的资源，在这里就是WEB的应用环境
 	 */
 	@Override
 	protected final void initServletBean() throws ServletException {
@@ -523,10 +524,14 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		if (logger.isInfoEnabled()) {
 			logger.info("Initializing Servlet '" + getServletName() + "'");
 		}
+		// 获取初始化环境的开始时间
 		long startTime = System.currentTimeMillis();
 
 		try {
+			// 初始化web环境
 			this.webApplicationContext = initWebApplicationContext();
+			// 同样调用一个模板方法，这个模板方法可以让子类初始化其指定的资源，这时这个方法在
+			// DispatcherServlet中并没有覆盖
 			initFrameworkServlet();
 		}
 		catch (ServletException | RuntimeException ex) {
@@ -541,7 +546,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			logger.debug("enableLoggingRequestDetails='" + this.enableLoggingRequestDetails +
 					"': request parameters and headers will be " + value);
 		}
-
+		// 初始化web应用程序所需的总体时间
 		if (logger.isInfoEnabled()) {
 			logger.info("Completed initialization in " + (System.currentTimeMillis() - startTime) + " ms");
 		}
@@ -557,7 +562,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * @see #setContextConfigLocation
 	 */
 	protected WebApplicationContext initWebApplicationContext() {
-		//从servlet上下文中属性中获取listener的容器
+		//获取默认共享的根环境，这个根环境通过关键字ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE
+		//保存在servlet环境里
 		WebApplicationContext rootContext =
 				WebApplicationContextUtils.getWebApplicationContext(getServletContext());
 		WebApplicationContext wac = null;
@@ -584,13 +590,23 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			// has been registered in the servlet context. If one exists, it is assumed
 			// that the parent context (if any) has already been set and that the
 			// user has performed any initialization such as setting the context id
+			//首选查找这个DispatcherServlet是否有一个专用的环境，这个根环境是通过一个属性(ContextAttribute)
+			// 作为关键字存在servlet环境里的，这个根环境可以在servlet的初始化参数中指定
+			// 因为在httpServletBean的初始化过程中，初始化参数将被当作Bean属性进行赋值
 			wac = findWebApplicationContext();
 		}
 		if (wac == null) {
 			// No context instance is defined for this servlet -> create a local one
+			// 创建DispatcherServlet的子环境，这个子环境引用已得到的主环境，这个主环境是可选的
 			wac = createWebApplicationContext(rootContext);
 		}
 
+		//web应用程序环境在创建之后，指定了这个类作为web应用程序进行环境事件处理的监听器
+		//如果这个web应用程序支持刷新，则这个onRefresh方法应该已经被调用，否则需要手动激发初始化事件
+		// 这个刷新方法将被dispatcherServlet重写，它将提取并初始化Spring Web MVC 的各个组件
+		//Servlet框架在初始化过程中为子类预留了初始化模板方法initFramewokServlet(),
+		// 同时也预留了onRefresh()方法，因为一个ConfigurableApplicationContext是动态刷新的，依赖于Web
+		// 应用程序环境的子类组件应该监听这个方法重新初始化子类，DispatcherServlet就是这样实现的
 		if (!this.refreshEventReceived) {
 			// Either the context is not a ConfigurableApplicationContext with refresh
 			// support or the context injected at construction time had already been
@@ -600,8 +616,11 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			}
 		}
 
+		// 如果设置了发布环境属性，则把这个Web应用程序环境以ServletContextAttributeName
+		// 的值保存到servlet环境里面，这个关键字是FrameworkServlet.Context.+servlet名称
 		if (this.publishContext) {
 			// Publish the context as a servlet context attribute.
+			// 将这个环境发布并存储到servlet Context中
 			String attrName = getServletContextAttributeName();
 			getServletContext().setAttribute(attrName, wac);
 		}

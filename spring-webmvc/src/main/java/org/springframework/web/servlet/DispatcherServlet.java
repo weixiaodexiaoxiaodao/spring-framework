@@ -499,13 +499,32 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
 	 */
 	protected void initStrategies(ApplicationContext context) {
+
+		// 初始化多部(multipart)请求解析器，没有默认的实现
 		initMultipartResolver(context);
+
+		// 初始化地域解析器，默认的实现是AcceptHeaderLocaleResolver
 		initLocaleResolver(context);
+
+		// 初始化主题解析器，默认的实现是FixedThemeResolver
 		initThemeResolver(context);
+
+		// 初始化处理器映射，这是个集合，默认的实现是BeanNameUrlHandlerMapping和
+		// DefaultAnnotationHandlerMapping
 		initHandlerMappings(context);
+
+		// 初始化处理器适配器，这是个集合，默认的实现是HttpRequestHandlerAdapter
+		// SimpleControllerHandlerAdapter 和 AnnotationMethodHandlerAdapter
 		initHandlerAdapters(context);
+
+		// 初始化处理器异常解析器，这是个集合，默认的实现是AnnotationMethodHandlerExceptionResolver
+		// ResponseStatusExceptionResolver 和 DefaultHandlerExceptionResolver
 		initHandlerExceptionResolvers(context);
+
+		// 初始化请求到视图名解析器，默认的实现 DefaultRequestToViewNameTranslator
 		initRequestToViewNameTranslator(context);
+
+		// 初始化视图解析器，这是个集合，默认的实现是InternalResourceViewResolver
 		initViewResolvers(context);
 		initFlashMapManager(context);
 	}
