@@ -148,7 +148,8 @@ public class HandlerExecutionChain {
 	 */
 	void applyPostHandle(HttpServletRequest request, HttpServletResponse response, @Nullable ModelAndView mv)
 			throws Exception {
-
+		// 采用了反序调用所有后置拦截器，因为后置拦截器用于释放资源，所以如果在初始化资源时采用了正序
+		// 那么在清除资源时最好用反序
 		HandlerInterceptor[] interceptors = getInterceptors();
 		if (!ObjectUtils.isEmpty(interceptors)) {
 			for (int i = interceptors.length - 1; i >= 0; i--) {

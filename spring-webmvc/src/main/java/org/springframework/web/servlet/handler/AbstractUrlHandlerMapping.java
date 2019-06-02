@@ -312,6 +312,7 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping i
 	 */
 	protected void registerHandler(String[] urlPaths, String beanName) throws BeansException, IllegalStateException {
 		Assert.notNull(urlPaths, "URL path array must not be null");
+		// 对于拥有多个URL的处理器，分别注册URL到处理器的映射
 		for (String urlPath : urlPaths) {
 			registerHandler(urlPath, beanName);
 		}
@@ -328,19 +329,24 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping i
 	protected void registerHandler(String urlPath, Object handler) throws BeansException, IllegalStateException {
 		Assert.notNull(urlPath, "URL path must not be null");
 		Assert.notNull(handler, "Handler object must not be null");
+		// 开始解析处理器
 		Object resolvedHandler = handler;
 
 		// Eagerly resolve handler if referencing singleton via name.
+		// 如果没有配置懒惰初始化处理器选项，则把使用的处理器名称转换为WEB应用程序环境中的Bean
+		// 如果配置懒惰初始化处理器选项，则这个转换是在返回处理器执行链的过程中实现的
 		if (!this.lazyInitHandlers && handler instanceof String) {
 			String handlerName = (String) handler;
 			ApplicationContext applicationContext = obtainApplicationContext();
 			if (applicationContext.isSingleton(handlerName)) {
+				// 如果是单例模式，则在初始化的时候就转换了
 				resolvedHandler = applicationContext.getBean(handlerName);
 			}
 		}
-
+		// 查看这个url是否已经注册了处理器
 		Object mappedHandler = this.handlerMap.get(urlPath);
 		if (mappedHandler != null) {
+			//如果这个url确实已经注册了处理器，则抛出异常
 			if (mappedHandler != resolvedHandler) {
 				throw new IllegalStateException(
 						"Cannot map " + getHandlerDescription(handler) + " to URL path [" + urlPath +
@@ -348,18 +354,21 @@ public abstract class AbstractUrlHandlerMapping extends AbstractHandlerMapping i
 			}
 		}
 		else {
+			// 根处理器
 			if (urlPath.equals("/")) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Root mapping to " + getHandlerDescription(handler));
 				}
 				setRootHandler(resolvedHandler);
 			}
+			// 默认的处理器
 			else if (urlPath.equals("/*")) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Default mapping to " + getHandlerDescription(handler));
 				}
 				setDefaultHandler(resolvedHandler);
 			}
+			// 正常的处理器
 			else {
 				this.handlerMap.put(urlPath, resolvedHandler);
 				if (logger.isTraceEnabled()) {

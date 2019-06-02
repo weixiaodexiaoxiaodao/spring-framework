@@ -907,6 +907,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * Delegate GET requests to processRequest/doService.
 	 * <p>Will also be invoked by HttpServlet's default implementation of {@code doHead},
 	 * with a {@code NoBodyResponse} that just captures the content length.
+	 * 方法被定义成final ， Http get 请求应该被派遣到spring web mvc的流程去处理
+	 * 子类不应该改写这个方法
 	 * @see #doService
 	 * @see #doHead
 	 */
@@ -954,6 +956,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * Delegate OPTIONS requests to {@link #processRequest}, if desired.
 	 * <p>Applies HttpServlet's standard OPTIONS processing otherwise,
 	 * and also if there is still no 'Allow' header set after dispatching.
+	 * spring web mvc 并不需要对OPTIONS请求进行任何特殊处理，所以这个方法可以被子类重写
+	 * 也就是说，在改写后不会对spring web mvc 流程有任何影响
 	 * @see #doService
 	 */
 	@Override
@@ -1002,17 +1006,24 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	/**
 	 * Process this request, publishing an event regardless of the outcome.
 	 * <p>The actual event handling is performed by the abstract
+	 * 在进行服务前保存线程局部存储的信息，在进行服务后恢复这些信息
 	 * {@link #doService} template method.
 	 */
 	protected final void processRequest(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-
+		// 记录请求开始的时间
 		long startTime = System.currentTimeMillis();
+		// 将记录产生的异常在finally语句里面打印出来
 		Throwable failureCause = null;
 
+		// 一个线程可能处理不同的请求，这经常发生在forward,include操作中，所以在处理之前需要
+		// 保存一些容易被覆盖的信息，在请求结束后恢复
+		// 保存当前的线程局部存储的地域信息，以备在处理完这个请求后恢复
 		LocaleContext previousLocaleContext = LocaleContextHolder.getLocaleContext();
+
 		LocaleContext localeContext = buildLocaleContext(request);
 
+		//保存当前的线程的局部存储的请求属性，以备在处理完这个请求后恢复
 		RequestAttributes previousAttributes = RequestContextHolder.getRequestAttributes();
 		ServletRequestAttributes requestAttributes = buildRequestAttributes(request, response, previousAttributes);
 
@@ -1022,6 +1033,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		initContextHolders(request, localeContext, requestAttributes);
 
 		try {
+			// 开始spring web mvc真正的派遣工作流，这个方法在servlet框架中被定义为抽象方法
+			// 在DispatcherServlet中实现
 			doService(request, response);
 		}
 		catch (ServletException | IOException ex) {
@@ -1034,6 +1047,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		}
 
 		finally {
+			// 在请求处理完成后，恢复先前线程局部存储中的地域信息
 			resetContextHolders(request, previousLocaleContext, previousAttributes);
 			if (requestAttributes != null) {
 				requestAttributes.requestCompleted();
@@ -1153,9 +1167,10 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 
 	private void publishRequestHandledEvent(HttpServletRequest request, HttpServletResponse response,
 			long startTime, @Nullable Throwable failureCause) {
-
 		if (this.publishEvents && this.webApplicationContext != null) {
 			// Whether or not we succeeded, publish an event.
+			// 计算这个请求的总处理时间，将时间传递给应用程序环境，注册事件监听器的Bean就会接收到这个事件，可以用于统计分析
+
 			long processingTime = System.currentTimeMillis() - startTime;
 			this.webApplicationContext.publishEvent(
 					new ServletRequestHandledEvent(this,

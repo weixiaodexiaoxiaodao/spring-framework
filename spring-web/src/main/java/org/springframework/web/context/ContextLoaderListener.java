@@ -97,6 +97,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 
 	/**
 	 * Initialize the root web application context.
+	 * 加载共享Web应用程序环境的默认实现
 	 */
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
@@ -109,7 +110,9 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
+		// 如果环境存在，则关闭环境加载的web应用程序环境
 		closeWebApplicationContext(event.getServletContext());
+		// 清除保存在servlet环境中的可释放的任意Bean
 		ContextCleanupListener.cleanupAttributes(event.getServletContext());
 	}
 

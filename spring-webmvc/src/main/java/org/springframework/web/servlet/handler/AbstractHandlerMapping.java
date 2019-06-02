@@ -195,6 +195,8 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @see org.springframework.web.context.request.WebRequestInterceptor
 	 */
 	public void setInterceptors(Object... interceptors) {
+		// 通过注入的方式设置通用拦截器，这些拦截器是通用的对象类型，其真正支持的类型包括
+		// HandlerInterceptor 和 WebRequestInterceptor,这些通用拦截器是应用在所有处理上的
 		this.interceptors.addAll(Arrays.asList(interceptors));
 	}
 
@@ -289,8 +291,11 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 */
 	@Override
 	protected void initApplicationContext() throws BeansException {
+		// 提供模板方法让子类添加新的拦截器
 		extendInterceptors(this.interceptors);
 		detectMappedInterceptors(this.adaptedInterceptors);
+		// 初始化拦截器，因为拦截器有不同的实现，所以需要将不同的拦截器适配到最终的
+		// HandlerInterceptor实现，这里通过HandlerInterceptorAdapter实现的
 		initInterceptors();
 	}
 
@@ -327,12 +332,14 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @see #adaptInterceptor
 	 */
 	protected void initInterceptors() {
+		// 如果配置的通用拦截器不为空
 		if (!this.interceptors.isEmpty()) {
 			for (int i = 0; i < this.interceptors.size(); i++) {
 				Object interceptor = this.interceptors.get(i);
 				if (interceptor == null) {
 					throw new IllegalArgumentException("Entry number " + i + " in interceptors array is null");
 				}
+				// 对每个拦截器进行适配
 				this.adaptedInterceptors.add(adaptInterceptor(interceptor));
 			}
 		}
@@ -352,12 +359,15 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 */
 	protected HandlerInterceptor adaptInterceptor(Object interceptor) {
 		if (interceptor instanceof HandlerInterceptor) {
+			// 如果拦截器是HandlerInterceptor本身的实现，则不需要适配
 			return (HandlerInterceptor) interceptor;
 		}
 		else if (interceptor instanceof WebRequestInterceptor) {
+			// 如果拦截器是WebRequestInterceptor
 			return new WebRequestHandlerInterceptorAdapter((WebRequestInterceptor) interceptor);
 		}
 		else {
+			// 不支持其他类型的拦截器
 			throw new IllegalArgumentException("Interceptor type not supported: " + interceptor.getClass().getName());
 		}
 	}
@@ -398,19 +408,26 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	@Override
 	@Nullable
 	public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		// 使用某种映射逻辑，将请求映射到一个真正的处理器，这是一个抽象方法，子类必须实现它，
+		// 例如，实现基于URL到Bean名称的映射逻辑
 		Object handler = getHandlerInternal(request);
+		// 如果没有处理器，则使用默认的处理器
 		if (handler == null) {
+			// 子类可以设置默认的处理器，也可以通过注入方式设置默认的处理器
 			handler = getDefaultHandler();
 		}
+		// 如果没有发现任何处理器，则返回空处理器，DispatcherServlet将发送Http错误响应SC_NOT_FOUNT(404)
 		if (handler == null) {
 			return null;
 		}
 		// Bean name or resolved handler?
+		// 如果内部映射返回一个字符串，则认为这个字符串是Bean的名称
 		if (handler instanceof String) {
 			String handlerName = (String) handler;
+			// 在应用程序环境中通过Bean的名称查找这个Bean
 			handler = obtainApplicationContext().getBean(handlerName);
 		}
-
+		// 连通处理器拦截器构造处理器执行链
 		HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
 
 		if (logger.isTraceEnabled()) {
@@ -419,7 +436,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		else if (logger.isDebugEnabled() && !request.getDispatcherType().equals(DispatcherType.ASYNC)) {
 			logger.debug("Mapped to " + executionChain.getHandler());
 		}
-
+		// 如果是跨域的请求，处理跨域的请求
 		if (CorsUtils.isCorsRequest(request)) {
 			CorsConfiguration globalConfig = this.corsConfigurationSource.getCorsConfiguration(request);
 			CorsConfiguration handlerConfig = getCorsConfiguration(handler, request);
@@ -470,6 +487,8 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @see #getAdaptedInterceptors()
 	 */
 	protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpServletRequest request) {
+
+		// 判断处理器的类型，如果处理器本身就是Handler，则做强制类型转换
 		HandlerExecutionChain chain = (handler instanceof HandlerExecutionChain ?
 				(HandlerExecutionChain) handler : new HandlerExecutionChain(handler));
 

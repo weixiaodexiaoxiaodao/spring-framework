@@ -536,6 +536,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	private void initMultipartResolver(ApplicationContext context) {
 		try {
+			// 从配置的web应用程序环境中查找多部请求解析器
 			this.multipartResolver = context.getBean(MULTIPART_RESOLVER_BEAN_NAME, MultipartResolver.class);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Detected " + this.multipartResolver);
@@ -546,6 +547,8 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 		catch (NoSuchBeanDefinitionException ex) {
 			// Default is no multipart resolver.
+			// 如果没有多部请示解析器在web应用程序环境中被注册，则忽略这种情况，不是所有的应用程序都需要
+			// 多部请求会被应用到文件上传的情况中
 			this.multipartResolver = null;
 			if (logger.isTraceEnabled()) {
 				logger.trace("No MultipartResolver '" + MULTIPART_RESOLVER_BEAN_NAME + "' declared");
@@ -560,6 +563,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	private void initLocaleResolver(ApplicationContext context) {
 		try {
+			// 从配置的Web应用程序环境中查找地域请求解析器
 			this.localeResolver = context.getBean(LOCALE_RESOLVER_BEAN_NAME, LocaleResolver.class);
 			if (logger.isTraceEnabled()) {
 				logger.trace("Detected " + this.localeResolver);
@@ -570,6 +574,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 		catch (NoSuchBeanDefinitionException ex) {
 			// We need to use the default.
+			// 如果web应用环境中没有，则查找默认的配置策略
 			this.localeResolver = getDefaultStrategy(context, LocaleResolver.class);
 			if (logger.isTraceEnabled()) {
 				logger.trace("No LocaleResolver '" + LOCALE_RESOLVER_BEAN_NAME +
@@ -613,16 +618,21 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		if (this.detectAllHandlerMappings) {
 			// Find all HandlerMappings in the ApplicationContext, including ancestor contexts.
+			// 如果配置为自动检测所有的处理器映射，则在加载的web应用环境中查找
+			// 所有实现处理器映射接口的bean
 			Map<String, HandlerMapping> matchingBeans =
 					BeanFactoryUtils.beansOfTypeIncludingAncestors(context, HandlerMapping.class, true, false);
 			if (!matchingBeans.isEmpty()) {
 				this.handlerMappings = new ArrayList<>(matchingBeans.values());
 				// We keep HandlerMappings in sorted order.
+				// 根据这些Bean所实现的order进行排序
 				AnnotationAwareOrderComparator.sort(this.handlerMappings);
 			}
 		}
 		else {
 			try {
+				// 如果没有配置为自动栓测所有的处理器映射，则在web应用环境中查找
+				// 名称为handlerMapping的Bean作为处理器映射
 				HandlerMapping hm = context.getBean(HANDLER_MAPPING_BEAN_NAME, HandlerMapping.class);
 				this.handlerMappings = Collections.singletonList(hm);
 			}
@@ -633,6 +643,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		// Ensure we have at least one HandlerMapping, by registering
 		// a default HandlerMapping if no other mappings are found.
+		// 如果仍然没有查找到注册的处理器映射器的实现，则使用默认的
 		if (this.handlerMappings == null) {
 			this.handlerMappings = getDefaultStrategies(context, HandlerMapping.class);
 			if (logger.isTraceEnabled()) {
@@ -857,6 +868,8 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * @see #getDefaultStrategies
 	 */
 	protected <T> T getDefaultStrategy(ApplicationContext context, Class<T> strategyInterface) {
+		// 对于单值的组件加载，首先重用了多值的组件加载方法，然后判断是否只有一个组件配置返回
+		// 期待的结果是有且只有一个组件被配置，否则将抛出异常
 		List<T> strategies = getDefaultStrategies(context, strategyInterface);
 		if (strategies.size() != 1) {
 			throw new BeanInitializationException(
@@ -876,23 +889,32 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T> List<T> getDefaultStrategies(ApplicationContext context, Class<T> strategyInterface) {
+		// 获取组件接口的完整类名，默认的策略是通过组件接口的类名作为关键字存储在属性文件里
 		String key = strategyInterface.getName();
+		// 获取以这个接口名为关键字配置的所有实现类的名称，名称之间以逗号分隔
 		String value = defaultStrategies.getProperty(key);
 		if (value != null) {
+			// 把以逗号分隔的类名称符转化成字符串数组
 			String[] classNames = StringUtils.commaDelimitedListToStringArray(value);
+			// 加载并初始化每一个类
 			List<T> strategies = new ArrayList<>(classNames.length);
 			for (String className : classNames) {
 				try {
+					// 通过类的名称加载这个类
 					Class<?> clazz = ClassUtils.forName(className, DispatcherServlet.class.getClassLoader());
+					// 在web应用程序环境中创建这个组件的类
 					Object strategy = createDefaultStrategy(context, clazz);
+					// 将初始化的组件bean加入返回的集合结果中
 					strategies.add((T) strategy);
 				}
 				catch (ClassNotFoundException ex) {
+					// 如果找不到这个类的定义
 					throw new BeanInitializationException(
 							"Could not find DispatcherServlet's default strategy class [" + className +
 							"] for interface [" + key + "]", ex);
 				}
 				catch (LinkageError err) {
+					// 如果找不到加载的类的依赖类
 					throw new BeanInitializationException(
 							"Unresolvable class definition for DispatcherServlet's default strategy class [" +
 							className + "] for interface [" + key + "]", err);
@@ -901,6 +923,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			return strategies;
 		}
 		else {
+			// 如果没有默认的配置，则返回一个空列表
 			return new LinkedList<>();
 		}
 	}
@@ -930,12 +953,17 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		// Keep a snapshot of the request attributes in case of an include,
 		// to be able to restore the original attributes after the include.
+		// 对于一个include请求，除了需要保存和恢复请求环境信息，还需要保存请求属性，在请求处理完毕之后
+		// 如果其中的某个属性发生改变，则需要恢复该属性
 		Map<String, Object> attributesSnapshot = null;
 		if (WebUtils.isIncludeRequest(request)) {
+			//如果是一个包含请求，则遍历所有的请求属性
 			attributesSnapshot = new HashMap<>();
 			Enumeration<?> attrNames = request.getAttributeNames();
 			while (attrNames.hasMoreElements()) {
 				String attrName = (String) attrNames.nextElement();
+				// 如果请求清除属性(cleanupAfterInclude)开关打开(默认是打开的),则保存
+				// spring指定的所有属性，其关键字以org.springframework.web.servlet开头
 				if (this.cleanupAfterInclude || attrName.startsWith(DEFAULT_STRATEGIES_PREFIX)) {
 					attributesSnapshot.put(attrName, request.getAttribute(attrName));
 				}
@@ -958,11 +986,13 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 
 		try {
+			// 开始spring web mvc 的核心工作流
 			doDispatch(request, response);
 		}
 		finally {
 			if (!WebAsyncUtils.getAsyncManager(request).isConcurrentHandlingStarted()) {
 				// Restore the original attribute snapshot, in case of an include.
+				// 恢复已保存的spring指定的请求属性
 				if (attributesSnapshot != null) {
 					restoreAttributesAfterInclude(request, attributesSnapshot);
 				}
@@ -1026,17 +1056,22 @@ public class DispatcherServlet extends FrameworkServlet {
 			Exception dispatchException = null;
 
 			try {
+				// 如果是一个HTTP多部请求，则将其转换并且封装成一个简单的HTTP请求
 				processedRequest = checkMultipart(request);
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
+				// 根据处理器映射的规则，获取处理器执行链
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
+					//如果没有发现任何处理器，则发送错误消息
 					noHandlerFound(processedRequest, response);
 					return;
 				}
 
 				// Determine handler adapter for the current request.
+				// 查找支持的处理器适配器，处理器适配器和处理器类型是成对出现的
+				// 因为处理器适配器知道如何调用它所支持的处理器
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
@@ -1048,7 +1083,7 @@ public class DispatcherServlet extends FrameworkServlet {
 						return;
 					}
 				}
-
+				//调用前置处理器，有任意的返回false，则结束整个流程
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
@@ -1061,6 +1096,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				applyDefaultViewName(processedRequest, mv);
+				// 应用后置拦截器
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -1074,6 +1110,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
+			// 如果处理失败且产生异常，则调用后置拦截器，并且传入产生的异常
 			triggerAfterCompletion(processedRequest, response, mappedHandler, ex);
 		}
 		catch (Throwable err) {
@@ -1089,6 +1126,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 			else {
 				// Clean up any resources used by a multipart request.
+				// 清除多部资源
 				if (multipartRequestParsed) {
 					cleanupMultipart(processedRequest);
 				}
@@ -1101,6 +1139,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	private void applyDefaultViewName(HttpServletRequest request, @Nullable ModelAndView mv) throws Exception {
 		if (mv != null && !mv.hasView()) {
+			// 如果控制器没有返回任何逻辑视图名，则会通过默认的视图逻辑返回
 			String defaultViewName = getDefaultViewName(request);
 			if (defaultViewName != null) {
 				mv.setViewName(defaultViewName);
@@ -1124,6 +1163,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				mv = ((ModelAndViewDefiningException) exception).getModelAndView();
 			}
 			else {
+				// 如果产生没被处理的异常，则调用处理器异常解析器，获取异常情况下的模型和视图
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
@@ -1131,6 +1171,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 
 		// Did the handler return a view to render?
+		// 如果返回了一个视图，则进行视图解析和显示
 		if (mv != null && !mv.wasCleared()) {
 			render(mv, request, response);
 			if (errorView) {
@@ -1149,6 +1190,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 
 		if (mappedHandler != null) {
+			// 处理成功，则调用后置拦截器
 			mappedHandler.triggerAfterCompletion(request, response, null);
 		}
 	}
