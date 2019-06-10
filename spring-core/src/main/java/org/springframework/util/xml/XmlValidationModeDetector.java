@@ -122,6 +122,7 @@ public class XmlValidationModeDetector {
 
 	/**
 	 * Does the content contain the DTD DOCTYPE declaration?
+	 * 如果包含DOCTYPE，则是dtd验证，否则是XSD验证
 	 */
 	private boolean hasDoctype(String content) {
 		return content.contains(DOCTYPE);

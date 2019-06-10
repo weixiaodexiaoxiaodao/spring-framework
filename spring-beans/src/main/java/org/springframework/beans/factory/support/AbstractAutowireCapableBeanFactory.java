@@ -168,6 +168,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 	/**
 	 * Create a new AbstractAutowireCapableBeanFactory.
+	 *
 	 */
 	public AbstractAutowireCapableBeanFactory() {
 		super();
@@ -270,6 +271,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * BeanFactoryAware or ApplicationContext through ApplicationContextAware.
 	 * <p>By default, only the BeanFactoryAware interface is ignored.
 	 * For further types to ignore, invoke this method for each type.
+	 * 自动装配时忽略给定的依赖接口。A中有B ，在初始化A时要初始化B，
+	 * 但如果B继承了BeanFactoryAware接口，则B 不会被注入
 	 * @see org.springframework.beans.factory.BeanFactoryAware
 	 * @see org.springframework.context.ApplicationContextAware
 	 */
