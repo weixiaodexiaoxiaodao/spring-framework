@@ -35,7 +35,7 @@ import org.springframework.lang.Nullable;
  * "/org/springframework/beans/factory/xml/spring-beans.dtd",
  * no matter whether specified as some local URL that includes "spring-beans"
  * in the DTD name or as "http://www.springframework.org/dtd/spring-beans-2.0.dtd".
- *
+ * 加载DTD类型的解析
  * @author Juergen Hoeller
  * @author Colin Sampaleanu
  * @since 04.06.2003
@@ -58,6 +58,7 @@ public class BeansDtdResolver implements EntityResolver {
 					"] and system ID [" + systemId + "]");
 		}
 		if (systemId != null && systemId.endsWith(DTD_EXTENSION)) {
+			//直接截取systemId最后的xx.dtd然后在当前目录录找
 			int lastPathSeparator = systemId.lastIndexOf('/');
 			int dtdNameStart = systemId.indexOf(DTD_NAME, lastPathSeparator);
 			if (dtdNameStart != -1) {

@@ -50,7 +50,7 @@ import org.springframework.util.CollectionUtils;
  *
  * <p>The pattern for the mapping files can be overidden using the
  * {@link #PluggableSchemaResolver(ClassLoader, String)} constructor
- *
+ *	解析XSD文件
  * @author Rob Harrop
  * @author Juergen Hoeller
  * @since 2.0
