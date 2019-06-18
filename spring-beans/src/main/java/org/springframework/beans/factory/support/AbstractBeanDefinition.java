@@ -227,6 +227,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	private MutablePropertyValues propertyValues;
 
 	/**
+	 * look-up,replaced-method都会被记录在这里面
 	 * 重写方法的设置集合
 	 */
 	@Nullable
