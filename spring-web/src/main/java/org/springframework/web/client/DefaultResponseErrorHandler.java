@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,13 @@
 
 package org.springframework.web.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.Nullable;
 import org.springframework.util.FileCopyUtils;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Spring's default implementation of the {@link ResponseErrorHandler} interface.
@@ -72,14 +78,14 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 	/**
 	 * Template method called from {@link #hasError(ClientHttpResponse)}.
 	 * <p>The default implementation checks if the given status code is
-	 * {@code HttpStatus.Series#CLIENT_ERROR CLIENT_ERROR} or
-	 * {@code HttpStatus.Series#SERVER_ERROR SERVER_ERROR}.
+	 * {@link org.springframework.http.HttpStatus.Series#CLIENT_ERROR CLIENT_ERROR} or
+	 * {@link org.springframework.http.HttpStatus.Series#SERVER_ERROR SERVER_ERROR}.
 	 * Can be overridden in subclasses.
 	 * @param unknownStatusCode the HTTP status code as raw value
 	 * @return {@code true} if the response indicates an error; {@code false} otherwise
 	 * @since 4.3.21
-	 * @see HttpStatus.Series#CLIENT_ERROR
-	 * @see HttpStatus.Series#SERVER_ERROR
+	 * @see org.springframework.http.HttpStatus.Series#CLIENT_ERROR
+	 * @see org.springframework.http.HttpStatus.Series#SERVER_ERROR
 	 */
 	protected boolean hasError(int unknownStatusCode) {
 		HttpStatus.Series series = HttpStatus.Series.resolve(unknownStatusCode);
@@ -96,18 +102,58 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 	public void handleError(ClientHttpResponse response) throws IOException {
 		HttpStatus statusCode = HttpStatus.resolve(response.getRawStatusCode());
 		if (statusCode == null) {
-			throw new UnknownHttpStatusCodeException(response.getRawStatusCode(), response.getStatusText(),
-					response.getHeaders(), getResponseBody(response), getCharset(response));
+			byte[] body = getResponseBody(response);
+			String message = getErrorMessage(response.getRawStatusCode(),
+					response.getStatusText(), body, getCharset(response));
+			throw new UnknownHttpStatusCodeException(message,
+					response.getRawStatusCode(), response.getStatusText(),
+					response.getHeaders(), body, getCharset(response));
 		}
 		handleError(response, statusCode);
 	}
 
 	/**
+	 * Return error message with details from the response body, possibly truncated:
+	 * <pre>
+	 * 404 Not Found: [{'id': 123, 'message': 'my very long... (500 bytes)]
+	 * </pre>
+	 */
+	private String getErrorMessage(
+			int rawStatusCode, String statusText, @Nullable byte[] responseBody, @Nullable Charset charset) {
+
+		String preface = rawStatusCode + " " + statusText + ": ";
+		if (ObjectUtils.isEmpty(responseBody)) {
+			return preface + "[no body]";
+		}
+
+		charset = charset == null ? StandardCharsets.UTF_8 : charset;
+		int maxChars = 200;
+
+		if (responseBody.length < maxChars * 2) {
+			return preface + "[" + new String(responseBody, charset) + "]";
+		}
+
+		try {
+			Reader reader = new InputStreamReader(new ByteArrayInputStream(responseBody), charset);
+			CharBuffer buffer = CharBuffer.allocate(maxChars);
+			reader.read(buffer);
+			reader.close();
+			buffer.flip();
+			return preface + "[" + buffer.toString() + "... (" + responseBody.length + " bytes)]";
+		}
+		catch (IOException ex) {
+			// should never happen
+			throw new IllegalStateException(ex);
+		}
+	}
+
+	/**
 	 * Handle the error in the given response with the given resolved status code.
 	 * <p>The default implementation throws an {@link HttpClientErrorException}
-	 * if the status code is {@link HttpStatus.Series#CLIENT_ERROR}, an
-	 * {@link HttpServerErrorException} if it is {@link HttpStatus.Series#SERVER_ERROR},
-	 * and an {@link UnknownHttpStatusCodeException} in other cases.
+	 * if the status code is {@link org.springframework.http.HttpStatus.Series#CLIENT_ERROR
+	 * CLIENT_ERROR}, an {@link HttpServerErrorException} if it is
+	 * {@link org.springframework.http.HttpStatus.Series#SERVER_ERROR SERVER_ERROR},
+	 * or an {@link UnknownHttpStatusCodeException} in other cases.
 	 * @since 5.0
 	 * @see HttpClientErrorException#create
 	 * @see HttpServerErrorException#create
@@ -117,13 +163,15 @@ public class DefaultResponseErrorHandler implements ResponseErrorHandler {
 		HttpHeaders headers = response.getHeaders();
 		byte[] body = getResponseBody(response);
 		Charset charset = getCharset(response);
+		String message = getErrorMessage(statusCode.value(), statusText, body, charset);
+
 		switch (statusCode.series()) {
 			case CLIENT_ERROR:
-				throw HttpClientErrorException.create(statusCode, statusText, headers, body, charset);
+				throw HttpClientErrorException.create(message, statusCode, statusText, headers, body, charset);
 			case SERVER_ERROR:
-				throw HttpServerErrorException.create(statusCode, statusText, headers, body, charset);
+				throw HttpServerErrorException.create(message, statusCode, statusText, headers, body, charset);
 			default:
-				throw new UnknownHttpStatusCodeException(statusCode.value(), statusText, headers, body, charset);
+				throw new UnknownHttpStatusCodeException(message, statusCode.value(), statusText, headers, body, charset);
 		}
 	}
 

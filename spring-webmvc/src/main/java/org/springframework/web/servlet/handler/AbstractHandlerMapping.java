@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,6 +36,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.PathMatcher;
 import org.springframework.web.HttpRequestHandler;
 import org.springframework.web.context.request.WebRequestInterceptor;
+import org.springframework.web.context.request.async.WebAsyncManager;
+import org.springframework.web.context.request.async.WebAsyncUtils;
 import org.springframework.web.context.support.WebApplicationObjectSupport;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -81,7 +84,8 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 
 	private final List<HandlerInterceptor> adaptedInterceptors = new ArrayList<>();
 
-	private CorsConfigurationSource corsConfigurationSource = new UrlBasedCorsConfigurationSource();
+	@Nullable
+	private CorsConfigurationSource corsConfigurationSource;
 
 	private CorsProcessor corsProcessor = new DefaultCorsProcessor();
 
@@ -116,7 +120,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	public void setAlwaysUseFullPath(boolean alwaysUseFullPath) {
 		this.urlPathHelper.setAlwaysUseFullPath(alwaysUseFullPath);
 		if (this.corsConfigurationSource instanceof UrlBasedCorsConfigurationSource) {
-			((UrlBasedCorsConfigurationSource)this.corsConfigurationSource).setAlwaysUseFullPath(alwaysUseFullPath);
+			((UrlBasedCorsConfigurationSource) this.corsConfigurationSource).setAlwaysUseFullPath(alwaysUseFullPath);
 		}
 	}
 
@@ -127,7 +131,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	public void setUrlDecode(boolean urlDecode) {
 		this.urlPathHelper.setUrlDecode(urlDecode);
 		if (this.corsConfigurationSource instanceof UrlBasedCorsConfigurationSource) {
-			((UrlBasedCorsConfigurationSource)this.corsConfigurationSource).setUrlDecode(urlDecode);
+			((UrlBasedCorsConfigurationSource) this.corsConfigurationSource).setUrlDecode(urlDecode);
 		}
 	}
 
@@ -138,7 +142,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	public void setRemoveSemicolonContent(boolean removeSemicolonContent) {
 		this.urlPathHelper.setRemoveSemicolonContent(removeSemicolonContent);
 		if (this.corsConfigurationSource instanceof UrlBasedCorsConfigurationSource) {
-			((UrlBasedCorsConfigurationSource)this.corsConfigurationSource).setRemoveSemicolonContent(removeSemicolonContent);
+			((UrlBasedCorsConfigurationSource) this.corsConfigurationSource).setRemoveSemicolonContent(removeSemicolonContent);
 		}
 	}
 
@@ -152,7 +156,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		Assert.notNull(urlPathHelper, "UrlPathHelper must not be null");
 		this.urlPathHelper = urlPathHelper;
 		if (this.corsConfigurationSource instanceof UrlBasedCorsConfigurationSource) {
-			((UrlBasedCorsConfigurationSource)this.corsConfigurationSource).setUrlPathHelper(urlPathHelper);
+			((UrlBasedCorsConfigurationSource) this.corsConfigurationSource).setUrlPathHelper(urlPathHelper);
 		}
 	}
 
@@ -172,7 +176,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		Assert.notNull(pathMatcher, "PathMatcher must not be null");
 		this.pathMatcher = pathMatcher;
 		if (this.corsConfigurationSource instanceof UrlBasedCorsConfigurationSource) {
-			((UrlBasedCorsConfigurationSource)this.corsConfigurationSource).setPathMatcher(pathMatcher);
+			((UrlBasedCorsConfigurationSource) this.corsConfigurationSource).setPathMatcher(pathMatcher);
 		}
 	}
 
@@ -195,8 +199,6 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @see org.springframework.web.context.request.WebRequestInterceptor
 	 */
 	public void setInterceptors(Object... interceptors) {
-		// 通过注入的方式设置通用拦截器，这些拦截器是通用的对象类型，其真正支持的类型包括
-		// HandlerInterceptor 和 WebRequestInterceptor,这些通用拦截器是应用在所有处理上的
 		this.interceptors.addAll(Arrays.asList(interceptors));
 	}
 
@@ -208,11 +210,17 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 */
 	public void setCorsConfigurations(Map<String, CorsConfiguration> corsConfigurations) {
 		Assert.notNull(corsConfigurations, "corsConfigurations must not be null");
-		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.setCorsConfigurations(corsConfigurations);
-		source.setPathMatcher(this.pathMatcher);
-		source.setUrlPathHelper(this.urlPathHelper);
-		this.corsConfigurationSource = source;
+		if (!corsConfigurations.isEmpty()) {
+			UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+			source.setCorsConfigurations(corsConfigurations);
+			source.setPathMatcher(this.pathMatcher);
+			source.setUrlPathHelper(this.urlPathHelper);
+			source.setLookupPathAttributeName(LOOKUP_PATH);
+			this.corsConfigurationSource = source;
+		}
+		else {
+			this.corsConfigurationSource = null;
+		}
 	}
 
 	/**
@@ -224,22 +232,6 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	public void setCorsConfigurationSource(CorsConfigurationSource corsConfigurationSource) {
 		Assert.notNull(corsConfigurationSource, "corsConfigurationSource must not be null");
 		this.corsConfigurationSource = corsConfigurationSource;
-	}
-
-	/**
-	 * Get the "global" CORS configurations.
-	 * @deprecated as of 5.1 since it is now possible to set a {@link CorsConfigurationSource} which is not a
-	 * {@link UrlBasedCorsConfigurationSource}. Expected to be removed in 5.2.
-	 */
-	@Deprecated
-	public Map<String, CorsConfiguration> getCorsConfigurations() {
-		if (this.corsConfigurationSource instanceof UrlBasedCorsConfigurationSource) {
-			return ((UrlBasedCorsConfigurationSource)this.corsConfigurationSource).getCorsConfigurations();
-		}
-		else {
-			throw new IllegalStateException("No CORS configurations available when the source " +
-					"is not an UrlBasedCorsConfigurationSource");
-		}
 	}
 
 	/**
@@ -291,11 +283,8 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 */
 	@Override
 	protected void initApplicationContext() throws BeansException {
-		// 提供模板方法让子类添加新的拦截器
 		extendInterceptors(this.interceptors);
 		detectMappedInterceptors(this.adaptedInterceptors);
-		// 初始化拦截器，因为拦截器有不同的实现，所以需要将不同的拦截器适配到最终的
-		// HandlerInterceptor实现，这里通过HandlerInterceptorAdapter实现的
 		initInterceptors();
 	}
 
@@ -332,14 +321,12 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @see #adaptInterceptor
 	 */
 	protected void initInterceptors() {
-		// 如果配置的通用拦截器不为空
 		if (!this.interceptors.isEmpty()) {
 			for (int i = 0; i < this.interceptors.size(); i++) {
 				Object interceptor = this.interceptors.get(i);
 				if (interceptor == null) {
 					throw new IllegalArgumentException("Entry number " + i + " in interceptors array is null");
 				}
-				// 对每个拦截器进行适配
 				this.adaptedInterceptors.add(adaptInterceptor(interceptor));
 			}
 		}
@@ -359,15 +346,12 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 */
 	protected HandlerInterceptor adaptInterceptor(Object interceptor) {
 		if (interceptor instanceof HandlerInterceptor) {
-			// 如果拦截器是HandlerInterceptor本身的实现，则不需要适配
 			return (HandlerInterceptor) interceptor;
 		}
 		else if (interceptor instanceof WebRequestInterceptor) {
-			// 如果拦截器是WebRequestInterceptor
 			return new WebRequestHandlerInterceptorAdapter((WebRequestInterceptor) interceptor);
 		}
 		else {
-			// 不支持其他类型的拦截器
 			throw new IllegalArgumentException("Interceptor type not supported: " + interceptor.getClass().getName());
 		}
 	}
@@ -408,26 +392,19 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	@Override
 	@Nullable
 	public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
-		// 使用某种映射逻辑，将请求映射到一个真正的处理器，这是一个抽象方法，子类必须实现它，
-		// 例如，实现基于URL到Bean名称的映射逻辑
 		Object handler = getHandlerInternal(request);
-		// 如果没有处理器，则使用默认的处理器
 		if (handler == null) {
-			// 子类可以设置默认的处理器，也可以通过注入方式设置默认的处理器
 			handler = getDefaultHandler();
 		}
-		// 如果没有发现任何处理器，则返回空处理器，DispatcherServlet将发送Http错误响应SC_NOT_FOUNT(404)
 		if (handler == null) {
 			return null;
 		}
 		// Bean name or resolved handler?
-		// 如果内部映射返回一个字符串，则认为这个字符串是Bean的名称
 		if (handler instanceof String) {
 			String handlerName = (String) handler;
-			// 在应用程序环境中通过Bean的名称查找这个Bean
 			handler = obtainApplicationContext().getBean(handlerName);
 		}
-		// 连通处理器拦截器构造处理器执行链
+
 		HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
 
 		if (logger.isTraceEnabled()) {
@@ -436,11 +413,11 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		else if (logger.isDebugEnabled() && !request.getDispatcherType().equals(DispatcherType.ASYNC)) {
 			logger.debug("Mapped to " + executionChain.getHandler());
 		}
-		// 如果是跨域的请求，处理跨域的请求
-		if (CorsUtils.isCorsRequest(request)) {
-			CorsConfiguration globalConfig = this.corsConfigurationSource.getCorsConfiguration(request);
+
+		if (hasCorsConfigurationSource(handler) || CorsUtils.isPreFlightRequest(request)) {
+			CorsConfiguration config = (this.corsConfigurationSource != null ? this.corsConfigurationSource.getCorsConfiguration(request) : null);
 			CorsConfiguration handlerConfig = getCorsConfiguration(handler, request);
-			CorsConfiguration config = (globalConfig != null ? globalConfig.combine(handlerConfig) : handlerConfig);
+			config = (config != null ? config.combine(handlerConfig) : handlerConfig);
 			executionChain = getCorsHandlerExecutionChain(request, executionChain, config);
 		}
 
@@ -487,12 +464,10 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	 * @see #getAdaptedInterceptors()
 	 */
 	protected HandlerExecutionChain getHandlerExecutionChain(Object handler, HttpServletRequest request) {
-
-		// 判断处理器的类型，如果处理器本身就是Handler，则做强制类型转换
 		HandlerExecutionChain chain = (handler instanceof HandlerExecutionChain ?
 				(HandlerExecutionChain) handler : new HandlerExecutionChain(handler));
 
-		String lookupPath = this.urlPathHelper.getLookupPathForRequest(request);
+		String lookupPath = this.urlPathHelper.getLookupPathForRequest(request, LOOKUP_PATH);
 		for (HandlerInterceptor interceptor : this.adaptedInterceptors) {
 			if (interceptor instanceof MappedInterceptor) {
 				MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;
@@ -505,6 +480,17 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 			}
 		}
 		return chain;
+	}
+
+	/**
+	 * Return {@code true} if there is a {@link CorsConfigurationSource} for this handler.
+	 * @since 5.2
+	 */
+	protected boolean hasCorsConfigurationSource(Object handler) {
+		if (handler instanceof HandlerExecutionChain) {
+			handler = ((HandlerExecutionChain) handler).getHandler();
+		}
+		return (handler instanceof CorsConfigurationSource || this.corsConfigurationSource != null);
 	}
 
 	/**
@@ -546,7 +532,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 			chain = new HandlerExecutionChain(new PreFlightHandler(config), interceptors);
 		}
 		else {
-			chain.addInterceptor(new CorsInterceptor(config));
+			chain.addInterceptor(0, new CorsInterceptor(config));
 		}
 		return chain;
 	}
@@ -586,6 +572,12 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		@Override
 		public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
 				throws Exception {
+
+			// Consistent with CorsFilter, ignore ASYNC dispatches
+			WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);
+			if (asyncManager.hasConcurrentResult()) {
+				return true;
+			}
 
 			return corsProcessor.processRequest(this.config, request, response);
 		}

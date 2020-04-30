@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -118,11 +118,8 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 		if (logger.isTraceEnabled()) {
 			logger.trace("Creating JDK dynamic proxy: " + this.advised.getTargetSource());
 		}
-		// 通过这些配置的Advised来获取所有需要代理的接口类
 		Class<?>[] proxiedInterfaces = AopProxyUtils.completeProxiedInterfaces(this.advised, true);
-		// 处理Object自带的方法
 		findDefinedEqualsAndHashCodeMethods(proxiedInterfaces);
-		// 创建一个新的代理对象实例
 		return Proxy.newProxyInstance(classLoader, proxiedInterfaces, this);
 	}
 
@@ -134,7 +131,6 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	private void findDefinedEqualsAndHashCodeMethods(Class<?>[] proxiedInterfaces) {
 		for (Class<?> proxiedInterface : proxiedInterfaces) {
 			Method[] methods = proxiedInterface.getDeclaredMethods();
-			// 处理Object中的hashCode,equals方法
 			for (Method method : methods) {
 				if (AopUtils.isEqualsMethod(method)) {
 					this.equalsDefined = true;
@@ -158,7 +154,6 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	@Override
 	@Nullable
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-		MethodInvocation invocation;
 		Object oldProxy = null;
 		boolean setProxyContext = false;
 
@@ -166,7 +161,6 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 		Object target = null;
 
 		try {
-			//如果这个方法没有设置equal 标志，并且是equal方法，则直接调用JdkDynamicAopProxy的equal方法
 			if (!this.equalsDefined && AopUtils.isEqualsMethod(method)) {
 				// The target does not implement the equals(Object) method itself.
 				return equals(args[0]);
@@ -175,13 +169,10 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 				// The target does not implement the hashCode() method itself.
 				return hashCode();
 			}
-			// 如果这个方法所在的类是装饰代理类，则找到目标类的class 并返回
 			else if (method.getDeclaringClass() == DecoratingProxy.class) {
 				// There is only getDecoratedClass() declared -> dispatch to proxy config.
 				return AopProxyUtils.ultimateTargetClass(this.advised);
 			}
-			// 如果这个ProxyConfig没有设置为可拦截，并且这个方法是在接口中定义的方法
-			// 同时这个方法的接口是Advisor的子接口，则直接通过java反射机制调用该方法
 			else if (!this.advised.opaque && method.getDeclaringClass().isInterface() &&
 					method.getDeclaringClass().isAssignableFrom(Advised.class)) {
 				// Service invocations on ProxyConfig with the proxy config...
@@ -189,7 +180,7 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 			}
 
 			Object retVal;
-			// 将当前代理对象设置在线程上下文中，保证在同一线程内复用
+
 			if (this.advised.exposeProxy) {
 				// Make invocation available if necessary.
 				oldProxy = AopContext.setCurrentProxy(proxy);
@@ -206,7 +197,6 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 
 			// Check whether we have any advice. If we don't, we can fallback on direct
 			// reflective invocation of the target, and avoid creating a MethodInvocation.
-			// 如果拦截器为空，并且参数是数组，则复制参数值，然后直接通过java反射机制调用该方法，获取响应值
 			if (chain.isEmpty()) {
 				// We can skip creating a MethodInvocation: just invoke the target directly
 				// Note that the final invoker must be an InvokerInterceptor so we know it does
@@ -216,14 +206,13 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 			}
 			else {
 				// We need to create a method invocation...
-				// 把所有信息都交给ReflectiveMethodInvocation构造方法，然后调用ReflectiveMethodInvocation process方法
-				invocation = new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
+				MethodInvocation invocation =
+						new ReflectiveMethodInvocation(proxy, target, method, args, targetClass, chain);
 				// Proceed to the joinpoint through the interceptor chain.
 				retVal = invocation.proceed();
 			}
 
 			// Massage return value if necessary.
-			// 处理返回值，并且判断返回类型和方法定义等信息，来处理响应结果
 			Class<?> returnType = method.getReturnType();
 			if (retVal != null && retVal == target &&
 					returnType != Object.class && returnType.isInstance(proxy) &&

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -51,15 +51,9 @@ import org.springframework.util.ClassUtils;
  */
 abstract class AutowireUtils {
 
-	private static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) -> {
-		boolean p1 = Modifier.isPublic(e1.getModifiers());
-		boolean p2 = Modifier.isPublic(e2.getModifiers());
-		if (p1 != p2) {
-			return (p1 ? -1 : 1);
-		}
-		int c1pl = e1.getParameterCount();
-		int c2pl = e2.getParameterCount();
-		return Integer.compare(c2pl, c1pl);
+	public static final Comparator<Executable> EXECUTABLE_COMPARATOR = (e1, e2) -> {
+		int result = Boolean.compare(Modifier.isPublic(e2.getModifiers()), Modifier.isPublic(e1.getModifiers()));
+		return result != 0 ? result : Integer.compare(e2.getParameterCount(), e1.getParameterCount());
 	};
 
 
@@ -103,7 +97,7 @@ abstract class AutowireUtils {
 		// It was declared by CGLIB, but we might still want to autowire it
 		// if it was actually declared by the superclass.
 		Class<?> superclass = wm.getDeclaringClass().getSuperclass();
-		return !ClassUtils.hasMethod(superclass, wm.getName(), wm.getParameterTypes());
+		return !ClassUtils.hasMethod(superclass, wm);
 	}
 
 	/**
@@ -118,8 +112,7 @@ abstract class AutowireUtils {
 		if (setter != null) {
 			Class<?> targetClass = setter.getDeclaringClass();
 			for (Class<?> ifc : interfaces) {
-				if (ifc.isAssignableFrom(targetClass) &&
-						ClassUtils.hasMethod(ifc, setter.getName(), setter.getParameterTypes())) {
+				if (ifc.isAssignableFrom(targetClass) && ClassUtils.hasMethod(ifc, setter)) {
 					return true;
 				}
 			}
@@ -272,7 +265,7 @@ abstract class AutowireUtils {
 
 
 	/**
-	 * Reflective InvocationHandler for lazy access to the current target object.
+	 * Reflective {@link InvocationHandler} for lazy access to the current target object.
 	 */
 	@SuppressWarnings("serial")
 	private static class ObjectFactoryDelegatingInvocationHandler implements InvocationHandler, Serializable {

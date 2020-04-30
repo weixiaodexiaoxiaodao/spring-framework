@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -103,6 +103,9 @@ public class MimeType implements Comparable<MimeType>, Serializable {
 
 	private final Map<String, String> parameters;
 
+	@Nullable
+	private volatile String toStringValue;
+
 
 	/**
 	 * Create a new {@code MimeType} for the given primary type.
@@ -191,7 +194,7 @@ public class MimeType implements Comparable<MimeType>, Serializable {
 	 * Checks the given token string for illegal characters, as defined in RFC 2616,
 	 * section 2.2.
 	 * @throws IllegalArgumentException in case of illegal characters
-	 * @see <a href="http://tools.ietf.org/html/rfc2616#section-2.2">HTTP 1.1, section 2.2</a>
+	 * @see <a href="https://tools.ietf.org/html/rfc2616#section-2.2">HTTP 1.1, section 2.2</a>
 	 */
 	private void checkToken(String token) {
 		for (int i = 0; i < token.length(); i++ ) {
@@ -417,7 +420,7 @@ public class MimeType implements Comparable<MimeType>, Serializable {
 
 
 	@Override
-	public boolean equals(Object other) {
+	public boolean equals(@Nullable Object other) {
 		if (this == other) {
 			return true;
 		}
@@ -469,9 +472,14 @@ public class MimeType implements Comparable<MimeType>, Serializable {
 
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		appendTo(builder);
-		return builder.toString();
+		String value = this.toStringValue;
+		if (value == null) {
+			StringBuilder builder = new StringBuilder();
+			appendTo(builder);
+			value = builder.toString();
+			this.toStringValue = value;
+		}
+		return value;
 	}
 
 	protected void appendTo(StringBuilder builder) {

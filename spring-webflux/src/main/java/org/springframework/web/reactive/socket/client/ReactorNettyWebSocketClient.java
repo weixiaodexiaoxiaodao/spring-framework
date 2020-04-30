@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,6 +31,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.socket.HandshakeInfo;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import org.springframework.web.reactive.socket.adapter.NettyWebSocketSessionSupport;
 import org.springframework.web.reactive.socket.adapter.ReactorNettyWebSocketSession;
 
 /**
@@ -45,6 +46,10 @@ public class ReactorNettyWebSocketClient implements WebSocketClient {
 
 
 	private final HttpClient httpClient;
+
+	private int maxFramePayloadLength = NettyWebSocketSessionSupport.DEFAULT_FRAME_MAX_SIZE;
+
+	private boolean handlePing;
 
 
 	/**
@@ -71,6 +76,51 @@ public class ReactorNettyWebSocketClient implements WebSocketClient {
 		return this.httpClient;
 	}
 
+	/**
+	 * Configure the maximum allowable frame payload length. Setting this value
+	 * to your application's requirement may reduce denial of service attacks
+	 * using long data frames.
+	 * <p>Corresponds to the argument with the same name in the constructor of
+	 * {@link io.netty.handler.codec.http.websocketx.WebSocketServerHandshakerFactory
+	 * WebSocketServerHandshakerFactory} in Netty.
+	 * <p>By default set to 65536 (64K).
+	 * @param maxFramePayloadLength the max length for frames.
+	 * @since 5.2
+	 */
+	public void setMaxFramePayloadLength(int maxFramePayloadLength) {
+		this.maxFramePayloadLength = maxFramePayloadLength;
+	}
+
+	/**
+	 * Return the configured {@link #setMaxFramePayloadLength(int) maxFramePayloadLength}.
+	 * @since 5.2
+	 */
+	public int getMaxFramePayloadLength() {
+		return this.maxFramePayloadLength;
+	}
+
+	/**
+	 * Configure whether to let ping frames through to be handled by the
+	 * {@link WebSocketHandler} given to the execute method. By default, Reactor
+	 * Netty automatically replies with pong frames in response to pings. This is
+	 * useful in a proxy for allowing ping and pong frames through.
+	 * <p>By default this is set to {@code false} in which case ping frames are
+	 * handled automatically by Reactor Netty. If set to {@code true}, ping
+	 * frames will be passed through to the {@link WebSocketHandler}.
+	 * @param handlePing whether to let Ping frames through for handling
+	 * @since 5.2.4
+	 */
+	public void setHandlePing(boolean handlePing) {
+		this.handlePing = handlePing;
+	}
+
+	/**
+	 * Return the configured {@link #setHandlePing(boolean)}.
+	 * @since 5.2.4
+	 */
+	public boolean getHandlePing() {
+		return this.handlePing;
+	}
 
 	@Override
 	public Mono<Void> execute(URI url, WebSocketHandler handler) {
@@ -78,21 +128,24 @@ public class ReactorNettyWebSocketClient implements WebSocketClient {
 	}
 
 	@Override
+	@SuppressWarnings("deprecation")
 	public Mono<Void> execute(URI url, HttpHeaders requestHeaders, WebSocketHandler handler) {
+		String protocols = StringUtils.collectionToCommaDelimitedString(handler.getSubProtocols());
 		return getHttpClient()
 				.headers(nettyHeaders -> setNettyHeaders(requestHeaders, nettyHeaders))
-				.websocket(StringUtils.collectionToCommaDelimitedString(handler.getSubProtocols()))
+				.websocket(protocols, getMaxFramePayloadLength(), this.handlePing)
 				.uri(url.toString())
 				.handle((inbound, outbound) -> {
 					HttpHeaders responseHeaders = toHttpHeaders(inbound);
 					String protocol = responseHeaders.getFirst("Sec-WebSocket-Protocol");
 					HandshakeInfo info = new HandshakeInfo(url, responseHeaders, Mono.empty(), protocol);
 					NettyDataBufferFactory factory = new NettyDataBufferFactory(outbound.alloc());
-					WebSocketSession session = new ReactorNettyWebSocketSession(inbound, outbound, info, factory);
+					WebSocketSession session = new ReactorNettyWebSocketSession(
+							inbound, outbound, info, factory, getMaxFramePayloadLength());
 					if (logger.isDebugEnabled()) {
 						logger.debug("Started session '" + session.getId() + "' for " + url);
 					}
-					return handler.handle(session);
+					return handler.handle(session).checkpoint(url + " [ReactorNettyWebSocketClient]");
 				})
 				.doOnRequest(n -> {
 					if (logger.isDebugEnabled()) {
