@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,11 +42,13 @@ import org.springframework.util.MultiValueMap;
  */
 class ReactorClientHttpResponse implements ClientHttpResponse {
 
-	private final NettyDataBufferFactory bufferFactory;
-
 	private final HttpClientResponse response;
 
 	private final NettyInbound inbound;
+
+	private final NettyDataBufferFactory bufferFactory;
+
+	private final HttpHeaders headers;
 
 	private final AtomicBoolean rejectSubscribers = new AtomicBoolean();
 
@@ -55,6 +57,9 @@ class ReactorClientHttpResponse implements ClientHttpResponse {
 		this.response = response;
 		this.inbound = inbound;
 		this.bufferFactory = new NettyDataBufferFactory(alloc);
+
+		MultiValueMap<String, String> adapter = new NettyHeadersAdapter(response.responseHeaders());
+		this.headers = HttpHeaders.readOnlyHttpHeaders(adapter);
 	}
 
 
@@ -81,9 +86,7 @@ class ReactorClientHttpResponse implements ClientHttpResponse {
 
 	@Override
 	public HttpHeaders getHeaders() {
-		HttpHeaders headers = new HttpHeaders();
-		this.response.responseHeaders().entries().forEach(e -> headers.add(e.getKey(), e.getValue()));
-		return headers;
+		return this.headers;
 	}
 
 	@Override
@@ -100,13 +103,13 @@ class ReactorClientHttpResponse implements ClientHttpResponse {
 	public MultiValueMap<String, ResponseCookie> getCookies() {
 		MultiValueMap<String, ResponseCookie> result = new LinkedMultiValueMap<>();
 		this.response.cookies().values().stream().flatMap(Collection::stream)
-				.forEach(cookie ->
-					result.add(cookie.name(), ResponseCookie.from(cookie.name(), cookie.value())
-							.domain(cookie.domain())
-							.path(cookie.path())
-							.maxAge(cookie.maxAge())
-							.secure(cookie.isSecure())
-							.httpOnly(cookie.isHttpOnly())
+				.forEach(c ->
+					result.add(c.name(), ResponseCookie.fromClientResponse(c.name(), c.value())
+							.domain(c.domain())
+							.path(c.path())
+							.maxAge(c.maxAge())
+							.secure(c.isSecure())
+							.httpOnly(c.isHttpOnly())
 							.build()));
 		return CollectionUtils.unmodifiableMultiValueMap(result);
 	}

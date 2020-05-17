@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
-import rx.Completable;
-import rx.Single;
 
 import org.springframework.core.codec.ByteBufferEncoder;
 import org.springframework.core.codec.CharSequenceEncoder;
@@ -41,8 +41,8 @@ import org.springframework.web.reactive.HandlerResult;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolver;
 import org.springframework.web.reactive.accept.RequestedContentTypeResolverBuilder;
 
-import static org.junit.Assert.*;
-import static org.springframework.web.method.ResolvableMethod.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.web.testfixture.method.ResolvableMethod.on;
 
 /**
  * Unit tests for {@link ResponseBodyResultHandler}.When adding a test also
@@ -60,7 +60,7 @@ public class ResponseBodyResultHandlerTests {
 	private ResponseBodyResultHandler resultHandler;
 
 
-	@Before
+	@BeforeEach
 	public void setup() throws Exception {
 		List<HttpMessageWriter<?>> writerList = new ArrayList<>(5);
 		writerList.add(new EncoderHttpMessageWriter<>(new ByteBufferEncoder()));
@@ -83,7 +83,7 @@ public class ResponseBodyResultHandlerTests {
 
 		method = on(TestController.class).annotNotPresent(ResponseBody.class).resolveMethod("doWork");
 		HandlerResult handlerResult = getHandlerResult(controller, method);
-		assertFalse(this.resultHandler.supports(handlerResult));
+		assertThat(this.resultHandler.supports(handlerResult)).isFalse();
 	}
 
 	@Test
@@ -106,7 +106,7 @@ public class ResponseBodyResultHandlerTests {
 
 	private void testSupports(Object controller, Method method) {
 		HandlerResult handlerResult = getHandlerResult(controller, method);
-		assertTrue(this.resultHandler.supports(handlerResult));
+		assertThat(this.resultHandler.supports(handlerResult)).isTrue();
 	}
 
 	private HandlerResult getHandlerResult(Object controller, Method method) {
@@ -116,7 +116,7 @@ public class ResponseBodyResultHandlerTests {
 
 	@Test
 	public void defaultOrder() {
-		assertEquals(100, this.resultHandler.getOrder());
+		assertThat(this.resultHandler.getOrder()).isEqualTo(100);
 	}
 
 

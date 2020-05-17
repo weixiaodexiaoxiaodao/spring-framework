@@ -361,6 +361,7 @@ public abstract class CacheAspectSupport extends AbstractCacheInvoker
 	 * @return the result of the invocation
 	 * @see CacheOperationInvoker#invoke()
 	 */
+	@Nullable
 	protected Object invokeOperation(CacheOperationInvoker invoker) {
 		return invoker.invoke();
 	}
@@ -445,7 +446,7 @@ public abstract class CacheAspectSupport extends AbstractCacheInvoker
 	}
 
 	@Nullable
-	private Object unwrapReturnValue(Object returnValue) {
+	private Object unwrapReturnValue(@Nullable Object returnValue) {
 		return ObjectUtils.unwrapOptional(returnValue);
 	}
 
@@ -485,14 +486,14 @@ public abstract class CacheAspectSupport extends AbstractCacheInvoker
 		for (Cache cache : context.getCaches()) {
 			if (operation.isCacheWide()) {
 				logInvalidating(context, operation, null);
-				doClear(cache);
+				doClear(cache, operation.isBeforeInvocation());
 			}
 			else {
 				if (key == null) {
 					key = generateKey(context, result);
 				}
 				logInvalidating(context, operation, key);
-				doEvict(cache, key);
+				doEvict(cache, key, operation.isBeforeInvocation());
 			}
 		}
 	}
@@ -836,7 +837,7 @@ public abstract class CacheAspectSupport extends AbstractCacheInvoker
 		}
 
 		@Override
-		public boolean equals(Object other) {
+		public boolean equals(@Nullable Object other) {
 			if (this == other) {
 				return true;
 			}
